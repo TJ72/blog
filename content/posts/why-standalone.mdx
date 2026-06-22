@@ -1,0 +1,22 @@
+---
+title: "為什麼 Next.js 要用 output: standalone"
+date: "2026-06-21"
+description: "容器化部署前，先搞懂 standalone 模式做了什麼、又為什麼能讓 image 變小、冷啟動變快。"
+tags: ["nextjs", "docker", "deploy"]
+---
+
+當你打算把 Next.js 放進 Docker、部署到像 Cloud Run 這種 serverless 容器平台時，
+`next.config` 裡的 `output: "standalone"` 幾乎是必設。
+
+## 它做了什麼
+
+`next build` 時會用依賴追蹤，把「執行階段真正用到的檔案與套件」複製到 `.next/standalone/`，
+並產生一支精簡的 `server.js`。於是你不需要整包 `node_modules` 就能啟動。
+
+## 好處
+
+- **image 更小**：從約 1GB 降到約 150MB
+- **冷啟動更快**：對 scale-to-zero 的平台特別有感
+- **Dockerfile 更乾淨**：runtime 層只要 copy standalone + static + public
+
+> 小提醒：`.next/static` 與 `public` 不會被自動包進 standalone，Dockerfile 要記得另外複製。

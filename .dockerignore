@@ -1,0 +1,17 @@
+# Dependencies & build artifacts (rebuilt inside the image)
+node_modules
+.next
+out
+
+# Version control & meta
+.git
+.gitignore
+
+# Local env & misc
+.env*.local
+*.log
+.DS_Store
+
+# Docker
+Dockerfile
+.dockerignore
