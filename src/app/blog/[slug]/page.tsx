@@ -2,7 +2,18 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { MDXRemote } from "next-mdx-remote/rsc";
 import remarkGfm from "remark-gfm";
+import rehypePrettyCode, {
+  type Options as RehypePrettyCodeOptions,
+} from "rehype-pretty-code";
 import { getAllPosts, getPostBySlug, postExists } from "@/lib/posts";
+
+// Syntax highlighting via Shiki (runs at build time → zero client JS).
+// Dual theme emits CSS variables (--shiki-light / --shiki-dark) that we switch
+// in globals.css; keepBackground:false lets us control the block background there.
+const prettyCodeOptions: RehypePrettyCodeOptions = {
+  theme: { light: "github-light", dark: "github-dark" },
+  keepBackground: false,
+};
 
 // Pre-render every post at build time (SSG).
 export function generateStaticParams() {
@@ -43,7 +54,12 @@ export default async function PostPage({
       <div className="prose prose-zinc mt-8 max-w-none dark:prose-invert">
         <MDXRemote
           source={content}
-          options={{ mdxOptions: { remarkPlugins: [remarkGfm] } }}
+          options={{
+            mdxOptions: {
+              remarkPlugins: [remarkGfm],
+              rehypePlugins: [[rehypePrettyCode, prettyCodeOptions]],
+            },
+          }}
         />
       </div>
     </article>

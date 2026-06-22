@@ -1,9 +1,22 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
+/* Class-based dark mode: `dark:` utilities now respond to a `.dark` ancestor
+   (set by next-themes on <html>) instead of the OS media query. This is what
+   lets a manual toggle override the system preference. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
+}
+
+/* Dark values live on `.dark` (added by next-themes) rather than a media query,
+   so JS can switch them. With `enableSystem`, next-themes still applies `.dark`
+   when the OS prefers dark and no explicit choice is stored. */
+.dark {
+  --background: #0a0a0a;
+  --foreground: #ededed;
 }
 
 @theme inline {
@@ -13,15 +26,46 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+/* ---------------------------------------------------------------------------
+   Syntax highlighting — rehype-pretty-code + Shiki (highlighted at build time).
+   The dual theme emits per-token CSS variables (--shiki-light / --shiki-dark)
+   instead of hard colors, and keepBackground:false means we own the block
+   background here. Read the light var by default; swap to the dark var under a
+   `.dark` ancestor so code follows the same toggle as the rest of the page.
+   --------------------------------------------------------------------------- */
+[data-rehype-pretty-code-figure] pre {
+  overflow-x: auto;
+  border-radius: 0.5rem;
+  border: 1px solid #e4e4e7; /* zinc-200, matches header/footer borders */
+  background-color: #f6f8fa; /* github-light surface */
+  padding: 1rem 1.25rem;
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+[data-rehype-pretty-code-figure] pre code {
+  background-color: transparent;
+  border: 0;
+  padding: 0;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, monospace;
+  font-size: inherit;
+}
+
+[data-rehype-pretty-code-figure] code span {
+  color: var(--shiki-light);
+}
+
+.dark [data-rehype-pretty-code-figure] pre {
+  border-color: #27272a; /* zinc-800 */
+  background-color: #24292e; /* github-dark surface */
+}
+
+.dark [data-rehype-pretty-code-figure] code span {
+  color: var(--shiki-dark);
 }
