@@ -9,16 +9,22 @@ export async function POST(request: NextRequest) {
   const password = form.get("password");
   const expected = process.env.ADMIN_TOKEN;
 
-  const back = new URL("/admin", request.url);
-
-  // Wrong or unconfigured password -> bounce back with an error flag (303 so the
-  // browser re-issues a GET to /admin after the POST).
+  // Use a RELATIVE Location instead of new URL(..., request.url): behind Cloud
+  // Run's proxy the standalone server sees request.url as the container's
+  // internal 0.0.0.0:8080 address, so an absolute redirect sent the browser to
+  // https://0.0.0.0:8080/admin. A relative Location is resolved by the browser
+  // against the real public origin it actually used. 303 = re-issue as GET.
   if (!expected || typeof password !== "string" || password !== expected) {
-    back.searchParams.set("error", "1");
-    return NextResponse.redirect(back, 303);
+    return new NextResponse(null, {
+      status: 303,
+      headers: { Location: "/admin?error=1" },
+    });
   }
 
-  const res = NextResponse.redirect(back, 303);
+  const res = new NextResponse(null, {
+    status: 303,
+    headers: { Location: "/admin" },
+  });
   res.cookies.set(ADMIN_COOKIE, expected, {
     httpOnly: true,
     sameSite: "lax",
