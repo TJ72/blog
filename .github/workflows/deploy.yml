@@ -1,0 +1,57 @@
+name: Deploy to Cloud Run
+
+# Auto-deploy on every push to main; also runnable by hand from the Actions tab.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  PROJECT_ID: albert-blog-2606221144
+  REGION: asia-east1
+  SERVICE: blog
+  IMAGE: asia-east1-docker.pkg.dev/albert-blog-2606221144/blog/blog
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read # checkout the repo
+      id-token: write # REQUIRED: lets the runner mint the GitHub OIDC token for WIF
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Exchange GitHub's short-lived OIDC token for a ~1h GCP token. No JSON keys.
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: projects/503336128890/locations/global/workloadIdentityPools/github-pool/providers/github-provider
+          service_account: github-deployer@albert-blog-2606221144.iam.gserviceaccount.com
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v2
+
+      # Wire docker's auth to the token from the auth step so it can push to AR.
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker asia-east1-docker.pkg.dev --quiet
+
+      # Runner is amd64 Linux, so a plain build is already the arch Cloud Run wants
+      # (no --platform / QEMU like we needed locally on Apple Silicon).
+      # Tag with the commit SHA for traceable, immutable deploys, plus moving 'latest'.
+      - name: Build image
+        run: docker build -t "$IMAGE:$GITHUB_SHA" -t "$IMAGE:latest" .
+
+      - name: Push image
+        run: docker push --all-tags "$IMAGE"
+
+      # Deploy the SHA-tagged image. We deliberately don't pass --allow-unauthenticated:
+      # an image update leaves the existing public invoker binding untouched, and the
+      # deployer SA has no IAM-admin rights to change it anyway.
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy "$SERVICE" \
+            --image "$IMAGE:$GITHUB_SHA" \
+            --region "$REGION" \
+            --quiet
