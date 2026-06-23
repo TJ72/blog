@@ -43,7 +43,17 @@ export default function RootLayout({
               <Link href="/" className="font-semibold tracking-tight">
                 Albert&apos;s Blog
               </Link>
-              <ThemeToggle />
+              <div className="flex items-center gap-4">
+                <a
+                  href="/api/cv"
+                  target="_blank"
+                  rel="noopener"
+                  className="text-sm text-zinc-600 hover:underline dark:text-zinc-400"
+                >
+                  CV
+                </a>
+                <ThemeToggle />
+              </div>
             </div>
           </header>
           <div className="flex-1">{children}</div>

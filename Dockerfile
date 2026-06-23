@@ -11,9 +11,10 @@ WORKDIR /app
 ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 RUN corepack enable
 
-# Copy only the manifest + lockfile first so this layer stays cached
-# unless dependencies actually change.
-COPY package.json pnpm-lock.yaml ./
+# Copy only the manifest + lockfile (+ .npmrc, which pins node-linker=hoisted so
+# the container gets a flat node_modules that traces into standalone cleanly)
+# first, so this layer stays cached unless dependencies actually change.
+COPY package.json pnpm-lock.yaml .npmrc ./
 RUN pnpm install --frozen-lockfile
 
 # ============================================================
