@@ -5,7 +5,7 @@ import matter from "gray-matter";
 const POSTS_DIR = path.join(process.cwd(), "content/posts");
 
 // TODO: Design category & tag features for the blog (discussed 2026-06-22).
-//  - Model: one `category` per post (big section, e.g. 雲端學習 / 澳洲遊學 / 演算法)
+//  - Model: one `category` per post (big section, e.g. Cloud / Study abroad / Algorithms)
 //    + keep `tags` for fine-grained labels. Adding `category` is cheap: frontmatter
 //    line + a field here + the parser below — no data migration needed.
 //  - Build the consumption side (tags are currently parsed but unused anywhere):

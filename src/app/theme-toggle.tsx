@@ -13,13 +13,13 @@ export function ThemeToggle() {
   return (
     <button
       type="button"
-      aria-label="切換深淺色模式"
+      aria-label="Toggle dark mode"
       onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
       className="rounded-md p-2 text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
     >
       <SunIcon className="size-5 dark:hidden" />
       <MoonIcon className="hidden size-5 dark:block" />
-      <span className="sr-only">切換深淺色模式</span>
+      <span className="sr-only">Toggle dark mode</span>
     </button>
   );
 }

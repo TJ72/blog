@@ -6,9 +6,9 @@ export default function Home() {
 
   return (
     <main className="mx-auto w-full max-w-2xl px-6 py-16">
-      <h1 className="text-3xl font-bold tracking-tight">部落格</h1>
+      <h1 className="text-3xl font-bold tracking-tight">Blog</h1>
       <p className="mt-2 text-zinc-600 dark:text-zinc-400">
-        紀錄我的開發與雲端學習筆記。
+        Notes on software development and learning the cloud.
       </p>
 
       <ul className="mt-10 space-y-8">

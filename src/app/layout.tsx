@@ -20,7 +20,7 @@ export const metadata: Metadata = {
     default: "Albert's Blog",
     template: "%s · Albert's Blog",
   },
-  description: "開發與雲端學習筆記",
+  description: "Notes on software development and learning the cloud.",
 };
 
 export default function RootLayout({
@@ -32,7 +32,7 @@ export default function RootLayout({
     // suppressHydrationWarning: next-themes sets the `class` on <html> before
     // React hydrates, so the server/client attributes intentionally differ.
     <html
-      lang="zh-Hant"
+      lang="en"
       suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >

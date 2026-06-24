@@ -47,7 +47,7 @@ export default async function PostPage({
         href="/"
         className="text-sm text-zinc-500 transition-colors hover:text-zinc-900 dark:hover:text-zinc-100"
       >
-        ← 回首頁
+        ← Back home
       </Link>
       <h1 className="mt-6 text-3xl font-bold tracking-tight">{meta.title}</h1>
       <time className="mt-2 block text-sm text-zinc-500">{meta.date}</time>
