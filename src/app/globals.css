@@ -1,48 +1,120 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
-/* Class-based dark mode: `dark:` utilities now respond to a `.dark` ancestor
-   (set by next-themes on <html>) instead of the OS media query. This is what
-   lets a manual toggle override the system preference. */
+/* Class-based dark mode: `dark:` utilities respond to a `.dark` ancestor (set by
+   next-themes on <html>) instead of the OS media query — so the manual toggle
+   can override the system preference. */
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* ===========================================================================
+   DESIGN TOKENS
+   Semantic names (paper / surface / line / ink / muted / faint / accent) map to
+   the zinc neutral ramp. Components reference the SEMANTIC name (text-muted,
+   border-line, …), never a raw zinc shade — so re-theming, or "turning on"
+   colour later, is a one-line change. Each colour has a light value here and a
+   dark override in `.dark` below.
+   =========================================================================== */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Colour — near-monochrome for now. `accent` is the single hook for adding
+     colour later: today it's just ink, so links/focus rings read monochrome.
+     Flip --accent to a hue (e.g. #2563eb) and everything accent-bound lights up. */
+  --paper: #ffffff; /* page background                  */
+  --surface: #fafafa; /* raised: cards, code (zinc-50)  */
+  --line: #e4e4e7; /* borders, dividers (zinc-200)     */
+  --ink: #18181b; /* primary text (zinc-900)           */
+  --muted: #71717a; /* secondary text (zinc-500)       */
+  --faint: #a1a1aa; /* tertiary: timestamps (zinc-400) */
+  --accent: var(--ink); /* ← change to a hue to add colour */
+
+  /* Reading widths — measure in `ch` (Albert's call: ~60ch, like leerob). */
+  --w-content: 60ch; /* default column / reading width  */
+  --w-wide: 56rem; /* galleries, wide content          */
+
+  /* Line-height */
+  --leading-tight: 1.15; /* display headings */
+  --leading-normal: 1.5; /* UI               */
+  --leading-relaxed: 1.7; /* body prose      */
+
+  /* Radius */
+  --radius: 0.375rem; /* = rounded-md */
+  --radius-lg: 0.5rem;
+
+  /* Motion — consumed by transitions/animations so motion stays consistent. */
+  --duration-fast: 150ms;
+  --duration: 200ms;
+  --duration-slow: 300ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1); /* entrances */
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Layering */
+  --z-header: 10;
+  --z-overlay: 50;
 }
 
-/* Dark values live on `.dark` (added by next-themes) rather than a media query,
-   so JS can switch them. With `enableSystem`, next-themes still applies `.dark`
-   when the OS prefers dark and no explicit choice is stored. */
 .dark {
-  --background: #0a0a0a;
-  --foreground: #ededed;
+  --paper: #09090b; /* zinc-950 */
+  --surface: #18181b; /* zinc-900 */
+  --line: #27272a; /* zinc-800 */
+  --ink: #f4f4f5; /* zinc-100 */
+  --muted: #a1a1aa; /* zinc-400 */
+  --faint: #71717a; /* zinc-500 */
+  --accent: var(--ink);
 }
 
+/* Expose the semantic colours + serif display font to Tailwind, so utilities
+   like bg-paper, text-ink, text-muted, border-line, ring-accent, font-display
+   exist. Tailwind's default zinc/etc. palette is untouched (still available). */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-paper: var(--paper);
+  --color-surface: var(--surface);
+  --color-line: var(--line);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-accent: var(--accent);
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-serif);
+}
+
+html {
+  /* Reserve the scrollbar track so toggling overflow never shifts the layout. */
+  scrollbar-gutter: stable;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--paper);
+  color: var(--ink);
   font-family: var(--font-sans), system-ui, sans-serif;
+  text-rendering: optimizeLegibility;
+}
+
+/* Big headings use the serif display face. `balance` keeps a title from leaving
+   one orphan word on its last line. Applies to chrome AND MDX article headings
+   (the typography plugin doesn't set heading font-family, so this wins). */
+h1,
+h2 {
+  font-family: var(--font-display), ui-serif, Georgia, serif;
+  text-wrap: balance;
+}
+
+/* Avoid ugly orphans / short last lines in body copy. */
+p {
+  text-wrap: pretty;
 }
 
 /* ---------------------------------------------------------------------------
    Syntax highlighting — rehype-pretty-code + Shiki (highlighted at build time).
-   The dual theme emits per-token CSS variables (--shiki-light / --shiki-dark)
-   instead of hard colors, and keepBackground:false means we own the block
-   background here. Read the light var by default; swap to the dark var under a
-   `.dark` ancestor so code follows the same toggle as the rest of the page.
+   The dual theme emits per-token CSS variables (--shiki-light / --shiki-dark);
+   keepBackground:false means we own the block background here. The border uses
+   our --line token, so it adapts to dark mode automatically; only the surface
+   stays a github theme colour (kept in sync with the shiki syntax theme).
    --------------------------------------------------------------------------- */
 [data-rehype-pretty-code-figure] pre {
   overflow-x: auto;
-  border-radius: 0.5rem;
-  border: 1px solid #e4e4e7; /* zinc-200, matches header/footer borders */
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--line);
   background-color: #f6f8fa; /* github-light surface */
   padding: 1rem 1.25rem;
   font-size: 0.875rem;
@@ -62,7 +134,6 @@ body {
 }
 
 .dark [data-rehype-pretty-code-figure] pre {
-  border-color: #27272a; /* zinc-800 */
   background-color: #24292e; /* github-dark surface */
 }
 

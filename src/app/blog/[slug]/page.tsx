@@ -42,15 +42,15 @@ export default async function PostPage({
   const { meta, content } = getPostBySlug(slug);
 
   return (
-    <article className="mx-auto w-full max-w-2xl px-6 py-16">
+    <article className="mx-auto w-full max-w-[var(--w-content)] px-6 py-16">
       <Link
         href="/"
-        className="text-sm text-zinc-500 transition-colors hover:text-zinc-900 dark:hover:text-zinc-100"
+        className="text-sm text-muted transition-colors hover:text-ink"
       >
         ← Back home
       </Link>
       <h1 className="mt-6 text-3xl font-bold tracking-tight">{meta.title}</h1>
-      <time className="mt-2 block text-sm text-zinc-500">{meta.date}</time>
+      <time className="mt-2 block text-sm text-muted">{meta.date}</time>
       <div className="prose prose-zinc mt-8 max-w-none dark:prose-invert">
         <MDXRemote
           source={content}

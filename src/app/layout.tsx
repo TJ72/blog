@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Fraunces } from "next/font/google";
 import Link from "next/link";
 import "./globals.css";
 import { Providers } from "./providers";
@@ -12,6 +12,13 @@ const geistSans = Geist({
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
+
+// Serif display face for big headings (--font-display). Variable font, so no
+// weight needed; swap to Newsreader / Instrument_Serif here in one line later.
+const fraunces = Fraunces({
+  variable: "--font-serif",
   subsets: ["latin"],
 });
 
@@ -34,12 +41,12 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${fraunces.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         <Providers>
-          <header className="border-b border-zinc-200 dark:border-zinc-800">
-            <div className="mx-auto flex w-full max-w-2xl items-center justify-between px-6 py-4">
+          <header className="border-b border-line">
+            <div className="mx-auto flex w-full max-w-[var(--w-content)] items-center justify-between px-6 py-4">
               <Link href="/" className="font-semibold tracking-tight">
                 Albert&apos;s Blog
               </Link>
@@ -48,7 +55,7 @@ export default function RootLayout({
                   href="/api/cv"
                   target="_blank"
                   rel="noopener"
-                  className="text-sm text-zinc-600 hover:underline dark:text-zinc-400"
+                  className="text-sm text-muted hover:underline"
                 >
                   CV
                 </a>
@@ -57,8 +64,8 @@ export default function RootLayout({
             </div>
           </header>
           <div className="flex-1">{children}</div>
-          <footer className="border-t border-zinc-200 dark:border-zinc-800">
-            <div className="mx-auto w-full max-w-2xl px-6 py-6 text-sm text-zinc-500">
+          <footer className="border-t border-line">
+            <div className="mx-auto w-full max-w-[var(--w-content)] px-6 py-6 text-sm text-muted">
               © {new Date().getFullYear()} Albert · Built with Next.js
             </div>
           </footer>
