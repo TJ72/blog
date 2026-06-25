@@ -49,9 +49,17 @@ jobs:
       # Deploy the SHA-tagged image. We deliberately don't pass --allow-unauthenticated:
       # an image update leaves the existing public invoker binding untouched, and the
       # deployer SA has no IAM-admin rights to change it anyway.
+      #
+      # --max-instances caps how many container instances autoscaling may run at once.
+      # It's the real cost ceiling (a budget only alerts; this actually bounds spend):
+      # at most 3 instances x ~80 concurrent req each. It was already 3 on the live
+      # service but only set out-of-band — declaring it here kills that config drift
+      # so the ceiling lives in version control, survives a service rebuild, and is
+      # visible in review. (min-instances stays 0 = scale-to-zero.)
       - name: Deploy to Cloud Run
         run: |
           gcloud run deploy "$SERVICE" \
             --image "$IMAGE:$GITHUB_SHA" \
             --region "$REGION" \
+            --max-instances 3 \
             --quiet
