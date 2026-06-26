@@ -89,7 +89,7 @@ html {
 body {
   background: var(--paper);
   color: var(--ink);
-  /* Full-serif reading face (STIX Two Text), à la leerob — body AND headings
+  /* Full-serif reading face (STIX Two Text), like leerob — body AND headings
      share the serif; hierarchy comes from weight/size/colour, not typeface.
      Geist stays loaded as the `font-sans` utility for any UI we want in sans. */
   font-family: var(--font-serif), ui-serif, Georgia, Cambria, "Times New Roman",

@@ -47,10 +47,10 @@ export default function RootLayout({
     >
       <body className="min-h-full">
         <Providers>
-          {/* Chrome-less, leerob-style: no header/footer. The theme toggle is the
-              only persistent control — a subtle fixed button in the top-right,
-              reachable on every page. */}
-          <div className="fixed right-3 top-3 z-50 rounded-md bg-paper/70 backdrop-blur-sm">
+          {/* Chrome-less, leerob-style: no header/footer. The theme control is
+              the only persistent chrome — a small System/Light/Dark pill fixed
+              bottom-left (like tailwindcss.com), reachable on every page. */}
+          <div className="fixed bottom-4 left-4 z-50">
             <ThemeToggle />
           </div>
           {children}

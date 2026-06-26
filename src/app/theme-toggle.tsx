@@ -1,26 +1,74 @@
 "use client";
 
 import { useTheme } from "next-themes";
+import { useEffect, useState } from "react";
 
-// No mounted/effect dance: we render BOTH icons and let CSS show the right one
-// via the `.dark` class that next-themes sets on <html> before first paint.
-// Server and client render identical markup → no hydration mismatch, no
-// flicker, and nothing theme-dependent is read during render. The current
-// theme is only read in onClick (after mount, on user interaction).
+// A 3-way theme control: System / Light / Dark (like tailwindcss.com).
+// next-themes is configured with defaultTheme="system" + enableSystem, so
+// "System" follows the OS and auto-updates when the OS flips; Light/Dark pin a
+// choice (persisted to localStorage). We read `theme` to highlight the active
+// option — that's only known on the client, hence the `mounted` guard: server
+// and first client render both show nothing active (markup matches → no
+// hydration mismatch), then the active pill appears once mounted.
+const OPTIONS = [
+  { value: "system", label: "System", Icon: MonitorIcon },
+  { value: "light", label: "Light", Icon: SunIcon },
+  { value: "dark", label: "Dark", Icon: MoonIcon },
+] as const;
+
 export function ThemeToggle() {
-  const { resolvedTheme, setTheme } = useTheme();
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   return (
-    <button
-      type="button"
-      aria-label="Toggle dark mode"
-      onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
-      className="rounded-md p-2 text-muted transition-colors hover:bg-surface hover:text-ink"
+    <div
+      role="radiogroup"
+      aria-label="Theme"
+      className="flex items-center gap-0.5 rounded-full border border-line bg-paper/80 p-1 backdrop-blur-sm"
     >
-      <SunIcon className="size-5 dark:hidden" />
-      <MoonIcon className="hidden size-5 dark:block" />
-      <span className="sr-only">Toggle dark mode</span>
-    </button>
+      {OPTIONS.map(({ value, label, Icon }) => {
+        const active = mounted && theme === value;
+        return (
+          <button
+            key={value}
+            type="button"
+            role="radio"
+            aria-checked={active}
+            aria-label={label}
+            title={label}
+            onClick={() => setTheme(value)}
+            className={`rounded-full p-1.5 transition-colors ${
+              active
+                ? "bg-surface text-ink shadow-sm"
+                : "text-faint hover:text-ink"
+            }`}
+          >
+            <Icon className="size-4" />
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function MonitorIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      className={className}
+      aria-hidden="true"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M9 17.25v1.007a3 3 0 0 1-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0 1 15 18.257V17.25m6-12V15a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 15V5.25m18 0A2.25 2.25 0 0 0 18.75 3H5.25A2.25 2.25 0 0 0 3 5.25m18 0V12a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 12V5.25"
+      />
+    </svg>
   );
 }
 
