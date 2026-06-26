@@ -26,8 +26,11 @@
   --faint: #a1a1aa; /* tertiary: timestamps (zinc-400) */
   --accent: var(--ink); /* ← change to a hue to add colour */
 
-  /* Reading widths — measure in `ch` (Albert's call: ~60ch, like leerob). */
-  --w-content: 60ch; /* default column / reading width  */
+  /* Reading width. MUST be a font-independent unit, NOT `ch`: `ch` = the advance
+     of the font's "0" glyph, so the same value renders wider in the sans header
+     than in the serif body and the columns stop lining up. Fixed rem ≈ leerob's
+     650px. (Was 60ch.) */
+  --w-content: 40rem; /* ~640px reading column           */
   --w-wide: 56rem; /* galleries, wide content          */
 
   /* Line-height */
@@ -86,13 +89,18 @@ html {
 body {
   background: var(--paper);
   color: var(--ink);
-  font-family: var(--font-sans), system-ui, sans-serif;
+  /* Full-serif reading face (STIX Two Text), à la leerob — body AND headings
+     share the serif; hierarchy comes from weight/size/colour, not typeface.
+     Geist stays loaded as the `font-sans` utility for any UI we want in sans. */
+  font-family: var(--font-serif), ui-serif, Georgia, Cambria, "Times New Roman",
+    serif;
   text-rendering: optimizeLegibility;
 }
 
-/* Big headings use the serif display face. `balance` keeps a title from leaving
-   one orphan word on its last line. Applies to chrome AND MDX article headings
-   (the typography plugin doesn't set heading font-family, so this wins). */
+/* Headings share the body serif; `balance` keeps a title from leaving one orphan
+   word on its last line. font-family is restated (redundant with body today) so
+   headings stay serif even if the body face ever changes. Applies to chrome AND
+   MDX article headings (the typography plugin doesn't set heading font-family). */
 h1,
 h2 {
   font-family: var(--font-display), ui-serif, Georgia, serif;
@@ -102,6 +110,36 @@ h2 {
 /* Avoid ugly orphans / short last lines in body copy. */
 p {
   text-wrap: pretty;
+}
+
+/* MDX article headings (inside .prose) — match leerob: a calm medium weight and
+   modest size. The typography plugin defaults h2/h3 to bold + large, which reads
+   heavy against the serif body. (Higher specificity than the plugin's :where()
+   rules, so these win.) */
+.prose :is(h2, h3, h4) {
+  font-weight: 500;
+  letter-spacing: -0.025em;
+}
+.prose h2 {
+  font-size: 1.25rem; /* text-xl, like leerob's section headings */
+  margin-top: 3rem; /* mt-12 */
+  margin-bottom: 0.5rem; /* mb-2 */
+  line-height: 1.3;
+}
+.prose h3 {
+  font-size: 1.125rem; /* text-lg */
+  margin-top: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+/* Body copy is serif, but anything code-ish stays monospace. Tailwind's preflight
+   already points these at the mono stack; we restate it so the intent is obvious
+   and survives base-style changes. (Shiki blocks set --font-mono again on pre code.) */
+code,
+kbd,
+samp,
+pre {
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 /* ---------------------------------------------------------------------------

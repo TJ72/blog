@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Fraunces } from "next/font/google";
-import Link from "next/link";
+import { Geist, Geist_Mono, STIX_Two_Text } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 import { ThemeToggle } from "./theme-toggle";
@@ -15,9 +14,12 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-// Serif display face for big headings (--font-display). Variable font, so no
-// weight needed; swap to Newsreader / Instrument_Serif here in one line later.
-const fraunces = Fraunces({
+// Primary serif reading face — STIX Two Text (leerob.com's serif): a clean text
+// serif with well-behaved descenders (g/j/y), unlike Fraunces's quirky display
+// cut. Used for BOTH body and headings (full-serif); hierarchy comes from
+// weight/size/colour, not typeface. Variable font, so no weight needed; swap to
+// Source_Serif_4 (ianjchiu.com's, slightly warmer) here in one line.
+const stixTwoText = STIX_Two_Text({
   variable: "--font-serif",
   subsets: ["latin"],
 });
@@ -41,34 +43,17 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${geistSans.variable} ${geistMono.variable} ${fraunces.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${stixTwoText.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
+      <body className="min-h-full">
         <Providers>
-          <header className="border-b border-line">
-            <div className="mx-auto flex w-full max-w-[var(--w-content)] items-center justify-between px-6 py-4">
-              <Link href="/" className="font-semibold tracking-tight">
-                Albert&apos;s Blog
-              </Link>
-              <div className="flex items-center gap-4">
-                <a
-                  href="/api/cv"
-                  target="_blank"
-                  rel="noopener"
-                  className="text-sm text-muted hover:underline"
-                >
-                  CV
-                </a>
-                <ThemeToggle />
-              </div>
-            </div>
-          </header>
-          <div className="flex-1">{children}</div>
-          <footer className="border-t border-line">
-            <div className="mx-auto w-full max-w-[var(--w-content)] px-6 py-6 text-sm text-muted">
-              © {new Date().getFullYear()} Albert · Built with Next.js
-            </div>
-          </footer>
+          {/* Chrome-less, leerob-style: no header/footer. The theme toggle is the
+              only persistent control — a subtle fixed button in the top-right,
+              reachable on every page. */}
+          <div className="fixed right-3 top-3 z-50 rounded-md bg-paper/70 backdrop-blur-sm">
+            <ThemeToggle />
+          </div>
+          {children}
         </Providers>
       </body>
     </html>

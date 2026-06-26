@@ -16,7 +16,7 @@ export default async function AdminPage({
 
   if (!(await isAuthed())) {
     return (
-      <main className="mx-auto w-full max-w-[var(--w-content)] px-6 py-16">
+      <main className="mx-auto w-full max-w-(--w-content) px-6 py-16">
         <h1 className="text-2xl font-semibold tracking-tight">Admin login</h1>
         <p className="mt-2 text-sm text-muted">
           Enter the admin password to view stats.
@@ -49,7 +49,7 @@ export default async function AdminPage({
   const views = await getCvViews();
 
   return (
-    <main className="mx-auto w-full max-w-[var(--w-content)] px-6 py-16">
+    <main className="mx-auto w-full max-w-(--w-content) px-6 py-16">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold tracking-tight">Admin</h1>
         <form method="post" action="/api/admin/logout">
