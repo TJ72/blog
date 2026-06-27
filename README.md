@@ -110,6 +110,14 @@ The "why" behind the non-obvious choices:
 - **CV served through the app, bucket stays private** — `/api/cv` streams the PDF
   from a private bucket using the runtime SA, counting one download per request.
   The bucket is never publicly exposed.
+- **Cloud-neutral data layer (ports and adapters)** — application code depends on
+  small interfaces (`ViewCounter`, `FileStore` in `src/lib/store.ts`), never on a
+  vendor SDK directly. The Google Cloud SDK lives behind one adapter
+  (`src/lib/adapters/gcp.ts`) — the only file that imports `@google-cloud/*`.
+  Moving a backend (say Postgres for the counter, or S3 for the file) is a
+  two-line rebind in the composition root with no other app changes. This is the
+  hexagonal (ports-and-adapters) pattern, and a concrete take on avoiding vendor
+  lock-in: most coupling is confined to one swappable file.
 - **`--max-instances` as the real cost ceiling** — a billing budget only *alerts*;
   capping instances is what actually bounds spend. It's set to 3 and codified in
   `deploy.yml` so the ceiling lives in version control, not out-of-band config.
@@ -155,7 +163,11 @@ src/app/              App Router: pages, layout, route handlers
   api/cv/             streams the CV, increments the counter
   api/admin/          minimal password-gated session for /admin
   admin/              view-count dashboard
-src/lib/              posts loader, GCP clients, auth helpers
+src/lib/              app-side libraries
+  store.ts            cloud-neutral ports (ViewCounter, FileStore) + composition root
+  adapters/gcp.ts     the only module that imports the Google Cloud SDK
+  posts.ts            MDX posts loader
+  auth.ts             admin session helpers
 Dockerfile            multi-stage build → standalone runtime image
 .github/workflows/    CI/CD (deploy to Cloud Run)
 ```
