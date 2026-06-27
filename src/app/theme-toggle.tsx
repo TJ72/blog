@@ -1,7 +1,7 @@
 "use client";
 
 import { useTheme } from "next-themes";
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 
 // A 3-way theme control: System / Light / Dark (like tailwindcss.com).
 // next-themes is configured with defaultTheme="system" + enableSystem, so
@@ -16,10 +16,21 @@ const OPTIONS = [
   { value: "dark", label: "Dark", Icon: MoonIcon },
 ] as const;
 
+// Hydration guard without a setState-in-effect: useSyncExternalStore returns the
+// server snapshot (false) during SSR and the first hydration render, then the
+// client snapshot (true) afterwards. Same result as a `mounted` flag, but it
+// keeps server and first client markup identical (no hydration mismatch) without
+// synchronously calling setState inside an effect. `subscribe` is a no-op because
+// the value only ever transitions once, at mount.
+const subscribe = () => () => {};
+
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  const mounted = useSyncExternalStore(
+    subscribe,
+    () => true, // client: hydrated
+    () => false, // server / first paint
+  );
 
   return (
     <div

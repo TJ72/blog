@@ -1,8 +1,8 @@
 import { isAuthed } from "@/lib/auth";
-import { getCvViews } from "@/lib/gcp";
+import { viewCounter } from "@/lib/store";
 
-// Reads a cookie + Firestore, so it must render dynamically on the Node runtime
-// (the GCP SDK needs Node). Keep it out of search engines.
+// Reads a cookie + the view counter, so it must render dynamically; the counter's
+// backend needs the Node runtime (not Edge). Keep it out of search engines.
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Admin", robots: { index: false } };
@@ -46,7 +46,7 @@ export default async function AdminPage({
     );
   }
 
-  const views = await getCvViews();
+  const views = await viewCounter.get();
 
   return (
     <main className="mx-auto w-full max-w-(--w-content) px-6 py-16">

@@ -1,8 +1,8 @@
-import { getCvFile, incrementCvViews } from "@/lib/gcp";
+import { fileStore, viewCounter } from "@/lib/store";
 
-// The GCP SDKs need the Node.js runtime (not Edge), and this handler must never
-// be prerendered or cached — every hit should both count and serve the latest
-// file that's sitting in the bucket.
+// The store backend needs the Node.js runtime (not Edge), and this handler must
+// never be prerendered or cached — every hit should both count and serve the
+// latest stored file.
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
@@ -11,13 +11,13 @@ export async function GET() {
   // serving the CV is the primary job, the metric is secondary. We still await
   // it so the write actually lands before Cloud Run may freeze the instance.
   try {
-    await incrementCvViews();
+    await viewCounter.increment();
   } catch (err) {
     console.error("[/api/cv] failed to increment counter:", err);
   }
 
   try {
-    const pdf = await getCvFile();
+    const pdf = await fileStore.getCv();
     return new Response(new Uint8Array(pdf), {
       headers: {
         "Content-Type": "application/pdf",
