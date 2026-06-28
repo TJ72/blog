@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { isAuthed } from "@/lib/auth";
 import { viewCounter } from "@/lib/store";
 
@@ -5,7 +6,7 @@ import { viewCounter } from "@/lib/store";
 // backend needs the Node runtime (not Edge). Keep it out of search engines.
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Admin", robots: { index: false } };
+export const metadata: Metadata = { title: "Admin", robots: { index: false } };
 
 export default async function AdminPage({
   searchParams,
