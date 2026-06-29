@@ -191,8 +191,8 @@ src/lib/              app-side libraries
   adapters/gcp.ts     the only module that imports the Google Cloud SDK
   posts.ts            MDX posts loader
   auth.ts             admin session helpers
-terraform/            infrastructure as code — the monitoring stack (uptime check,
-                      alert policy, dashboard, Pub/Sub topic + IAM, the function)
+terraform/            infrastructure as code — monitoring, CI/CD identity (WIF),
+                      and data backends (Firestore, GCS bucket, Artifact Registry)
 functions/            standalone Cloud Functions (source)
   alert-to-discord/   relays alerts from Pub/Sub to a Discord webhook
 Dockerfile            multi-stage build → standalone runtime image

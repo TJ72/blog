@@ -19,6 +19,13 @@ resources.
 - `google_project_iam_member` ×2 — `run.developer` + `artifactregistry.writer`
 - `google_service_account_iam_member` ×2 — deployer acts as the runtime SA; the `TJ72/blog` principalSet may impersonate the deployer
 
+**Data backends** (`data.tf`) and runtime-SA access (`iam.tf`):
+
+- `google_firestore_database` — the view counter (`stats/cv`)
+- `google_storage_bucket` — the private CV bucket
+- `google_artifact_registry_repository` — the container-image repo
+- `google_project_iam_member` + `google_storage_bucket_iam_member` — the runtime SA reads the counter and the CV (least privilege)
+
 ## Prerequisites
 
 - Terraform >= 1.5

@@ -68,3 +68,19 @@ resource "google_service_account_iam_member" "deployer_wif_user" {
   role               = "roles/iam.workloadIdentityUser"
   member             = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github.name}/attribute.repository/TJ72/blog"
 }
+
+# Runtime SA (the project default compute SA that Cloud Run and the function run
+# as) — the access the app needs at runtime, least privilege: read the Firestore
+# counter and read the CV object, nothing more. (The compute SA also carries
+# GCP's default roles/editor grant, which is intentionally NOT managed here.)
+resource "google_project_iam_member" "runtime_datastore" {
+  project = "albert-blog-2606221144"
+  role    = "roles/datastore.user"
+  member  = "serviceAccount:503336128890-compute@developer.gserviceaccount.com"
+}
+
+resource "google_storage_bucket_iam_member" "runtime_cv_viewer" {
+  bucket = google_storage_bucket.cv.name
+  role   = "roles/storage.objectViewer"
+  member = "serviceAccount:503336128890-compute@developer.gserviceaccount.com"
+}
