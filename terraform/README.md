@@ -1,7 +1,9 @@
 # Infrastructure (Terraform)
 
-Infrastructure as code for the blog's monitoring stack. Terraform is the source
-of record for these resources:
+Infrastructure as code for the blog. Terraform is the source of record for these
+resources.
+
+**Monitoring** (`main.tf`):
 
 - `google_monitoring_uptime_check_config` — uptime check on the home page
 - `google_monitoring_alert_policy` — fires when the check fails from >1 location
@@ -9,6 +11,13 @@ of record for these resources:
 - `google_monitoring_dashboard` — "Blog — Service Health"
 - `google_pubsub_topic` + `google_pubsub_topic_iam_member` — alert transport
 - `google_cloudfunctions2_function` — the alert-to-Discord relay
+
+**CI/CD identity** (`iam.tf`) — keyless GitHub Actions → GCP via Workload Identity Federation:
+
+- `google_iam_workload_identity_pool` + `_provider` — trust GitHub's OIDC, scoped to the repo owner
+- `google_service_account` — the deployer SA
+- `google_project_iam_member` ×2 — `run.developer` + `artifactregistry.writer`
+- `google_service_account_iam_member` ×2 — deployer acts as the runtime SA; the `TJ72/blog` principalSet may impersonate the deployer
 
 ## Prerequisites
 
