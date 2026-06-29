@@ -8,3 +8,9 @@ variable "discord_webhook_url" {
   description = "Incoming webhook URL for the #blog-alerts Discord channel."
   sensitive   = true
 }
+
+variable "admin_token" {
+  type        = string
+  description = "Password for the /admin view-count page (Cloud Run env var ADMIN_TOKEN)."
+  sensitive   = true
+}

@@ -3,6 +3,10 @@
 Infrastructure as code for the blog. Terraform is the source of record for these
 resources.
 
+**Compute** (`cloudrun.tf`):
+
+- `google_cloud_run_v2_service` — the blog service. Terraform owns the config; CI owns the image (`lifecycle.ignore_changes`), so `gcloud run deploy` on each push isn't seen as drift.
+
 **Monitoring** (`main.tf`):
 
 - `google_monitoring_uptime_check_config` — uptime check on the home page
