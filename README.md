@@ -89,6 +89,21 @@ separate service accounts, each scoped to only what it needs:
   bucket-scoped `storage.objectViewer`. It can read the counter and the CV, and
   nothing else.
 
+**Observability.** A Cloud Monitoring uptime check probes the home page every
+minute from three continents. If it fails from more than one location, an alert
+policy fires and routes — via a Pub/Sub topic and a Cloud Function — to a Discord
+channel. A dashboard tracks request rate, latency, and instance count.
+
+```mermaid
+flowchart LR
+    check["Uptime check<br/>HTTPS GET / every 1 min"] -->|fails| policy["Alert policy"]
+    policy -->|notify| topic["Pub/Sub<br/>monitoring-alerts"]
+    topic --> fn["Cloud Function<br/>alert-to-discord"]
+    fn -->|webhook| discord(["Discord #blog-alerts"]):::ext
+
+    classDef ext fill:#ffffff,stroke:#999999;
+```
+
 ## Design decisions
 
 The "why" behind the non-obvious choices:
@@ -121,6 +136,14 @@ The "why" behind the non-obvious choices:
 - **`--max-instances` as the real cost ceiling** — a billing budget only *alerts*;
   capping instances is what actually bounds spend. It's set to 3 and codified in
   `deploy.yml` so the ceiling lives in version control, not out-of-band config.
+- **Alerting via Pub/Sub fan-out, not a direct webhook** — Cloud Monitoring has no
+  native Discord channel, so the alert policy publishes to a Pub/Sub topic and a
+  Cloud Function formats and forwards it. Pub/Sub decouples the alert source from
+  the delivery code (the same shape as SNS in front of a Lambda), so a second
+  destination later is another subscriber, not a change to the policy. The whole
+  stack is defined as JSON/CLI in `monitoring/` — reproducible and version-
+  controlled, though applying changes is still a manual step (IaC-lite, not yet
+  Terraform).
 - **`localStorage` for the theme, not a cookie** — reading a cookie in the root
   layout would force the whole site out of static rendering into dynamic
   rendering. The theme is applied client-side instead, keeping pages static.
@@ -168,6 +191,9 @@ src/lib/              app-side libraries
   adapters/gcp.ts     the only module that imports the Google Cloud SDK
   posts.ts            MDX posts loader
   auth.ts             admin session helpers
+monitoring/           Cloud Monitoring config — uptime check, alert policy, dashboard
+functions/            standalone Cloud Functions (deployed separately)
+  alert-to-discord/   relays alerts from Pub/Sub to a Discord webhook
 Dockerfile            multi-stage build → standalone runtime image
 .github/workflows/    CI/CD (deploy to Cloud Run)
 ```

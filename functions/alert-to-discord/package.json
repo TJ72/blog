@@ -1,0 +1,13 @@
+{
+  "name": "alert-to-discord",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Cloud Function: relay Cloud Monitoring alerts to a Discord webhook",
+  "main": "index.js",
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "@google-cloud/functions-framework": "^3.4.0"
+  }
+}
