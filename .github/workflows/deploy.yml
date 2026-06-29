@@ -23,12 +23,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
+      # These two values come from repo Actions Variables that Terraform sets from
+      # the WIF provider name + deployer SA email (single source of truth lives in
+      # terraform/github.tf). This step just prints them for confirmation — they're
+      # not secrets. Safe to delete once you've verified the wiring.
+      - name: Show WIF inputs (set by Terraform)
+        run: |
+          echo "WIF_PROVIDER = ${{ vars.WIF_PROVIDER }}"
+          echo "DEPLOYER_SA  = ${{ vars.DEPLOYER_SA }}"
+
       # Exchange GitHub's short-lived OIDC token for a ~1h GCP token. No JSON keys.
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v3
         with:
-          workload_identity_provider: projects/503336128890/locations/global/workloadIdentityPools/github-pool/providers/github-provider
-          service_account: github-deployer@albert-blog-2606221144.iam.gserviceaccount.com
+          workload_identity_provider: ${{ vars.WIF_PROVIDER }}
+          service_account: ${{ vars.DEPLOYER_SA }}
 
       - name: Set up gcloud
         uses: google-github-actions/setup-gcloud@v3

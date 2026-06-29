@@ -11,6 +11,10 @@ terraform {
       source  = "hashicorp/google"
       version = ">= 6.0"
     }
+    github = {
+      source  = "integrations/github"
+      version = "~> 6.0"
+    }
   }
 }
 
@@ -21,4 +25,11 @@ terraform {
 provider "google" {
   project = "albert-blog-2606221144"
   region  = "asia-east1"
+}
+
+# Manages settings on the GitHub repo (here: Actions Variables). Auth comes from
+# the GITHUB_TOKEN environment variable, so run plan/apply as:
+#   GITHUB_TOKEN=$(gh auth token) terraform apply
+provider "github" {
+  owner = "TJ72"
 }

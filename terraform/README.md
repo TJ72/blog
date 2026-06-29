@@ -26,10 +26,16 @@ resources.
 - `google_artifact_registry_repository` — the container-image repo
 - `google_project_iam_member` + `google_storage_bucket_iam_member` — the runtime SA reads the counter and the CV (least privilege)
 
+**CI/CD wiring** (`github.tf`) — single source of truth for the workflow's auth inputs:
+
+- `github_actions_variable` ×2 — publishes the WIF provider name (`WIF_PROVIDER`) and deployer SA email (`DEPLOYER_SA`) to the repo, so `deploy.yml` reads `${{ vars.* }}` instead of hardcoding them
+
 ## Prerequisites
 
 - Terraform >= 1.5
 - Application Default Credentials: `gcloud auth application-default login`
+- A GitHub token for the `github` provider (it manages repo Actions Variables):
+  `export GITHUB_TOKEN=$(gh auth token)` before running plan/apply
 - A `terraform.tfvars` (gitignored) holding the Discord webhook:
   ```hcl
   discord_webhook_url = "https://discord.com/api/webhooks/…"
