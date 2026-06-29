@@ -13,7 +13,27 @@ env:
   IMAGE: asia-east1-docker.pkg.dev/albert-blog-2606221144/blog/blog
 
 jobs:
+  # Quality gate: lint + type-check must pass before we build and deploy.
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Enable pnpm
+        run: corepack enable
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Lint
+        run: pnpm lint
+      - name: Type-check
+        run: pnpm typecheck
+
   deploy:
+    needs: quality
     runs-on: ubuntu-latest
     permissions:
       contents: read # checkout the repo
