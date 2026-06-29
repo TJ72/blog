@@ -19,12 +19,15 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+      # Enable corepack first so pnpm is on PATH before setup-node: v5 inspects the
+      # packageManager field + pnpm cache and errors if pnpm isn't found yet.
+      - name: Enable pnpm
+        run: corepack enable
       - name: Set up Node
         uses: actions/setup-node@v5
         with:
           node-version: 22
-      - name: Enable pnpm
-        run: corepack enable
+          cache: pnpm
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: Lint
