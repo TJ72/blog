@@ -141,9 +141,9 @@ The "why" behind the non-obvious choices:
   Cloud Function formats and forwards it. Pub/Sub decouples the alert source from
   the delivery code (the same shape as SNS in front of a Lambda), so a second
   destination later is another subscriber, not a change to the policy. The whole
-  stack is defined as JSON/CLI in `monitoring/` — reproducible and version-
-  controlled, though applying changes is still a manual step (IaC-lite, not yet
-  Terraform).
+  monitoring stack is declared in Terraform (`terraform/`) and imported into
+  state, so it's reproducible, reviewable as a diff, and drift-checked with
+  `terraform plan`.
 - **`localStorage` for the theme, not a cookie** — reading a cookie in the root
   layout would force the whole site out of static rendering into dynamic
   rendering. The theme is applied client-side instead, keeping pages static.
@@ -191,8 +191,9 @@ src/lib/              app-side libraries
   adapters/gcp.ts     the only module that imports the Google Cloud SDK
   posts.ts            MDX posts loader
   auth.ts             admin session helpers
-monitoring/           Cloud Monitoring config — uptime check, alert policy, dashboard
-functions/            standalone Cloud Functions (deployed separately)
+terraform/            infrastructure as code — the monitoring stack (uptime check,
+                      alert policy, dashboard, Pub/Sub topic + IAM, the function)
+functions/            standalone Cloud Functions (source)
   alert-to-discord/   relays alerts from Pub/Sub to a Discord webhook
 Dockerfile            multi-stage build → standalone runtime image
 .github/workflows/    CI/CD (deploy to Cloud Run)

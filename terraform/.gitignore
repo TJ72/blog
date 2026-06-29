@@ -1,0 +1,23 @@
+# Local Terraform working directory: downloaded provider binaries, etc.
+# Large and machine-specific — never committed.
+.terraform/
+
+# State files. These record the real resources Terraform manages AND can contain
+# secrets in plaintext (e.g. the Cloud Function's DISCORD_WEBHOOK_URL env var).
+# Never commit them. A team would use a secure remote backend (a GCS bucket).
+*.tfstate
+*.tfstate.*
+
+# Crash logs.
+crash.log
+crash.*.log
+
+# Variable files often hold secrets.
+*.tfvars
+*.tfvars.json
+
+# Generated config written by `-generate-config-out` before we review/rename it.
+# (We rename the cleaned-up version into a permanent file before committing.)
+generated.tf
+
+# Keep .terraform.lock.hcl tracked — it pins provider versions for reproducibility.
