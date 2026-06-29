@@ -25,6 +25,11 @@ terraform {
 provider "google" {
   project = "albert-blog-2606221144"
   region  = "asia-east1"
+
+  # Some APIs (e.g. billingbudgets) require a quota/billing project when running
+  # under user ADC; route those requests through this project instead of failing.
+  billing_project       = "albert-blog-2606221144"
+  user_project_override = true
 }
 
 # Manages settings on the GitHub repo (here: Actions Variables). Auth comes from

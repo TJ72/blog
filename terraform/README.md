@@ -30,6 +30,11 @@ resources.
 
 - `github_actions_variable` ×2 — publishes the WIF provider name (`WIF_PROVIDER`) and deployer SA email (`DEPLOYER_SA`) to the repo, so `deploy.yml` reads `${{ vars.* }}` instead of hardcoding them
 
+**Project config** (`services.tf`, `budget.tf`):
+
+- `google_project_service` (a `for_each` over the APIs the project relies on; `disable_on_destroy = false`)
+- `google_billing_budget` — the 150 TWD/month cost alert (alerts only; the real cap is Cloud Run `--max-instances`)
+
 ## Prerequisites
 
 - Terraform >= 1.5
