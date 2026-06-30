@@ -6,6 +6,15 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# One deploy per branch at a time. A newer push cancels an in-flight run so
+# production always converges to the latest commit — without this, two overlapping
+# runs could finish out of order and an older run could overwrite newer with an
+# older image. (Cloud Run revisions are created/switched atomically, so cancelling
+# a run mid-deploy is safe.)
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   PROJECT_ID: albert-blog-2606221144
   REGION: asia-east1
