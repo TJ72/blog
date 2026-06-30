@@ -284,8 +284,13 @@ resource "google_cloudfunctions2_function" "alert_to_discord" {
     available_memory               = "256Mi"
     binary_authorization_policy    = null
     environment_variables = {
-      DISCORD_WEBHOOK_URL = var.discord_webhook_url
-      LOG_EXECUTION_ID    = "true"
+      LOG_EXECUTION_ID = "true"
+    }
+    secret_environment_variables {
+      key        = "DISCORD_WEBHOOK_URL"
+      project_id = var.project_id
+      secret     = google_secret_manager_secret.discord_webhook.secret_id
+      version    = "latest"
     }
     ingress_settings                 = "ALLOW_ALL"
     max_instance_count               = 3
@@ -297,12 +302,14 @@ resource "google_cloudfunctions2_function" "alert_to_discord" {
     vpc_connector_egress_settings    = null
   }
 
-  # The build/trigger SAs must hold their roles before the function is updated to
-  # run as them, or the redeploy (build) / event delivery could fail in the gap.
+  # The build/trigger SAs must hold their roles, and the runtime SA must hold
+  # secretAccessor on the webhook, before the function is updated — or the redeploy
+  # (build) / event delivery / secret mount could fail in the gap.
   depends_on = [
     google_project_iam_member.alert_fn_build_builder,
     google_project_iam_member.alert_fn_trigger_receiver,
     google_project_iam_member.alert_fn_trigger_invoker,
+    google_secret_manager_secret_iam_member.alert_fn_discord_webhook,
   ]
 }
 

@@ -19,6 +19,7 @@ locals {
     "iamcredentials.googleapis.com",       # WIF token exchange
     "sts.googleapis.com",                  # WIF token exchange
     "billingbudgets.googleapis.com",       # the cost budget below
+    "secretmanager.googleapis.com",        # ADMIN_TOKEN / SESSION_SECRET / webhook
   ]
 }
 

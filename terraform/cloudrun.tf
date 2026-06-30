@@ -46,12 +46,22 @@ resource "google_cloud_run_v2_service" "blog" {
       name           = null
       working_dir    = null
       env {
-        name  = "ADMIN_TOKEN"
-        value = var.admin_token
+        name = "ADMIN_TOKEN"
+        value_source {
+          secret_key_ref {
+            secret  = google_secret_manager_secret.admin_token.secret_id
+            version = "latest"
+          }
+        }
       }
       env {
-        name  = "SESSION_SECRET"
-        value = var.session_secret
+        name = "SESSION_SECRET"
+        value_source {
+          secret_key_ref {
+            secret  = google_secret_manager_secret.session_secret.secret_id
+            version = "latest"
+          }
+        }
       }
       ports {
         container_port = 8080
@@ -87,13 +97,16 @@ resource "google_cloud_run_v2_service" "blog" {
     type     = "TRAFFIC_TARGET_ALLOCATION_TYPE_LATEST"
   }
 
-  # The new revision runs AS blog_runtime, so that SA must already hold its runtime
-  # roles before this service is updated; otherwise the first request that touches
-  # Firestore/GCS could fail in the gap before the IAM bindings exist. (IAM is also
+  # The new revision runs AS blog_runtime and mounts the admin-token/session-secret
+  # secrets, so that SA must already hold its datastore/storage roles AND the
+  # secretAccessor grants before this service is updated; otherwise the revision
+  # could fail to start (secret mount) or 500 on first use. (IAM is also
   # eventually-consistent, so propagation can still lag a few seconds after apply.)
   depends_on = [
     google_project_iam_member.runtime_datastore,
     google_storage_bucket_iam_member.runtime_cv_viewer,
+    google_secret_manager_secret_iam_member.blog_runtime_admin_token,
+    google_secret_manager_secret_iam_member.blog_runtime_session_secret,
   ]
 
   # CI/CD (gcloud run deploy) owns the image and stamps client metadata on every

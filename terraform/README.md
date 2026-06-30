@@ -45,10 +45,9 @@ resources.
 - Application Default Credentials: `gcloud auth application-default login`
 - A GitHub token for the `github` provider (it manages repo Actions Variables):
   `export GITHUB_TOKEN=$(gh auth token)` before running plan/apply
-- A `terraform.tfvars` (gitignored) holding the Discord webhook:
-  ```hcl
-  discord_webhook_url = "https://discord.com/api/webhooks/…"
-  ```
+- The app/function secrets set in Secret Manager (see [Secrets](#secrets)). No
+  `terraform.tfvars` is needed — `project_id` has a default and the secrets aren't
+  Terraform variables.
 
 ## Usage
 
@@ -84,6 +83,23 @@ terraform init -migrate-state   # first time only: copy existing state up
 (Backend blocks can't use variables, so the bucket name is a literal in
 `providers.tf` even though `project_id` is a variable everywhere else.)
 
+## Secrets
+
+`ADMIN_TOKEN`, `SESSION_SECRET`, and the Discord webhook live in **Secret Manager**,
+not as plaintext env vars. Terraform manages the secret *containers* and grants
+each runtime SA `secretmanager.secretAccessor` (`secrets.tf`); Cloud Run and the
+function reference them by name. The *values* are added **out-of-band**, so no
+secret ever passes through Terraform or lands in state:
+
+```bash
+printf %s 'the-value' | gcloud secrets versions add admin-token --data-file=-
+# likewise for session-secret and discord-webhook
+```
+
+Rotating a secret = add a new version (the references use `latest`) and redeploy
+the consumer. Local `next dev` still reads `.env.local`; Secret Manager only backs
+the deployed services.
+
 ## Testing the alert pipeline
 
 ```
@@ -114,9 +130,9 @@ state without recreating them.
 
 ## Notes / limitations
 
-- **State** is in a GCS backend (see [State](#state)); it can still contain secrets
-  in plaintext, so the bucket is private + versioned. Moving the secrets out of
-  state entirely is a separate task (Secret Manager).
+- **State** is in a private, versioned GCS backend (see [State](#state)). The app
+  secrets are no longer in it — they live in Secret Manager (see [Secrets](#secrets)),
+  so state holds only non-secret config plus references.
 - **The function's source** is referenced as the already-uploaded zip, so Terraform
   manages the function's *config* but not its *code deploy* — changing
   `../functions/alert-to-discord` still needs `gcloud functions deploy`. Managing
