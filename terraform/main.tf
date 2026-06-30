@@ -259,7 +259,7 @@ resource "google_cloudfunctions2_function" "alert_to_discord" {
     entry_point           = "alertToDiscord"
     environment_variables = {}
     runtime               = "nodejs22"
-    service_account       = "projects/${var.project_id}/serviceAccounts/${local.compute_sa}"
+    service_account       = google_service_account.alert_fn_build.id
     worker_pool           = null
     automatic_update_policy {
     }
@@ -275,7 +275,7 @@ resource "google_cloudfunctions2_function" "alert_to_discord" {
     event_type            = "google.cloud.pubsub.topic.v1.messagePublished"
     pubsub_topic          = google_pubsub_topic.monitoring_alerts.id
     retry_policy          = "RETRY_POLICY_DO_NOT_RETRY"
-    service_account_email = local.compute_sa
+    service_account_email = google_service_account.alert_fn_trigger.email
     trigger_region        = "asia-east1"
   }
   service_config {
@@ -296,6 +296,14 @@ resource "google_cloudfunctions2_function" "alert_to_discord" {
     vpc_connector                    = null
     vpc_connector_egress_settings    = null
   }
+
+  # The build/trigger SAs must hold their roles before the function is updated to
+  # run as them, or the redeploy (build) / event delivery could fail in the gap.
+  depends_on = [
+    google_project_iam_member.alert_fn_build_builder,
+    google_project_iam_member.alert_fn_trigger_receiver,
+    google_project_iam_member.alert_fn_trigger_invoker,
+  ]
 }
 
 # __generated__ by Terraform from "projects/albert-blog-2606221144/topics/monitoring-alerts roles/pubsub.publisher serviceAccount:service-503336128890@gcp-sa-monitoring-notification.iam.gserviceaccount.com"

@@ -112,3 +112,45 @@ resource "google_service_account" "alert_fn_runtime" {
   account_id   = "alert-fn-runtime"
   display_name = "alert-to-discord function runtime"
 }
+
+# The function's two control-plane identities, moved off the default compute SA
+# (editor) for defense in depth. Unlike the runtime SA these are NOT inherited by
+# the executing function code — they run at deploy time (Cloud Build) and dispatch
+# time (Eventarc) — so they were lower priority, but neither needs editor.
+
+# Build identity: Cloud Build compiles the source zip into an image and pushes it
+# to the gcf-artifacts repo on deploy. cloudbuild.builds.builder is the role
+# Google documents for a user-specified gen2 build service account.
+resource "google_service_account" "alert_fn_build" {
+  project      = var.project_id
+  account_id   = "alert-fn-build"
+  display_name = "alert-to-discord function build"
+}
+
+resource "google_project_iam_member" "alert_fn_build_builder" {
+  project = var.project_id
+  role    = "roles/cloudbuild.builds.builder"
+  member  = "serviceAccount:${google_service_account.alert_fn_build.email}"
+}
+
+# Trigger identity: Eventarc uses this to invoke the function when a Pub/Sub alert
+# arrives. It needs to receive events and invoke the underlying Cloud Run service.
+# (run.invoker is project-scoped here for reliability; it could be tightened to
+# just the function's service.)
+resource "google_service_account" "alert_fn_trigger" {
+  project      = var.project_id
+  account_id   = "alert-fn-trigger"
+  display_name = "alert-to-discord function trigger"
+}
+
+resource "google_project_iam_member" "alert_fn_trigger_receiver" {
+  project = var.project_id
+  role    = "roles/eventarc.eventReceiver"
+  member  = "serviceAccount:${google_service_account.alert_fn_trigger.email}"
+}
+
+resource "google_project_iam_member" "alert_fn_trigger_invoker" {
+  project = var.project_id
+  role    = "roles/run.invoker"
+  member  = "serviceAccount:${google_service_account.alert_fn_trigger.email}"
+}
