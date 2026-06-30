@@ -291,7 +291,7 @@ resource "google_cloudfunctions2_function" "alert_to_discord" {
     max_instance_count               = 3
     max_instance_request_concurrency = 1
     min_instance_count               = 0
-    service_account_email            = "503336128890-compute@developer.gserviceaccount.com"
+    service_account_email            = google_service_account.alert_fn_runtime.email
     timeout_seconds                  = 60
     vpc_connector                    = null
     vpc_connector_egress_settings    = null

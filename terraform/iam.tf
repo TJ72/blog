@@ -96,3 +96,19 @@ resource "google_storage_bucket_iam_member" "runtime_cv_viewer" {
   role   = "roles/storage.objectViewer"
   member = "serviceAccount:${google_service_account.blog_runtime.email}"
 }
+
+# Dedicated runtime SA for the alert-to-discord Cloud Function. The function code
+# only reads an env var and POSTs to Discord over HTTPS — it calls NO GCP API — so
+# this identity holds ZERO roles. Same blast-radius logic as blog_runtime: if the
+# function is ever compromised, the token it could leak grants nothing.
+#
+# Only the function's *runtime* identity moves here. Its *build* SA (Cloud Build,
+# build_config) and *trigger* SA (Eventarc, event_trigger) still use the default
+# compute SA — those are control-plane identities used at deploy/dispatch time and
+# are not inherited by the running function code, so they're a lower-priority,
+# separate hardening step.
+resource "google_service_account" "alert_fn_runtime" {
+  project      = "albert-blog-2606221144"
+  account_id   = "alert-fn-runtime"
+  display_name = "alert-to-discord function runtime"
+}
