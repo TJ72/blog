@@ -16,6 +16,11 @@ const prettyCodeOptions: RehypePrettyCodeOptions = {
   keepBackground: false,
 };
 
+// Only the posts returned by generateStaticParams exist; any other slug 404s at
+// the framework level (dynamicParams=false), so an unknown slug never reaches the
+// runtime MDX compile below. Valid here because Cache Components isn't enabled.
+export const dynamicParams = false;
+
 // Pre-render every post at build time (SSG).
 export function generateStaticParams() {
   return getAllPosts().map((post) => ({ slug: post.slug }));

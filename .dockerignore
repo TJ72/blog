@@ -20,5 +20,6 @@ Dockerfile
 # 100MB+ of provider binaries plus plaintext state/vars; keep it out of the
 # build context (smaller/faster builds, no secrets in the builder layer).
 terraform/
+functions/
 docs/
 *.md
