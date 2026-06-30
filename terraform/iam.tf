@@ -52,11 +52,12 @@ resource "google_project_iam_member" "deployer_ar_writer" {
   member  = "serviceAccount:${google_service_account.github_deployer.email}"
 }
 
-# Let the deployer act as the runtime SA (required to deploy a service that runs
-# as that SA). The runtime SA is the project's default compute SA, which is not
-# managed here, so it is referenced by its literal resource name.
+# Let the deployer act as the runtime SA. Deploying a Cloud Run service that runs
+# as a given SA needs roles/iam.serviceAccountUser ("act as") on that SA — even
+# when CI passes only --image and the SA is inherited from the existing service.
+# Points at the dedicated blog-runtime SA below (was the default compute SA).
 resource "google_service_account_iam_member" "deployer_actas_runtime" {
-  service_account_id = "projects/albert-blog-2606221144/serviceAccounts/503336128890-compute@developer.gserviceaccount.com"
+  service_account_id = google_service_account.blog_runtime.name
   role               = "roles/iam.serviceAccountUser"
   member             = "serviceAccount:${google_service_account.github_deployer.email}"
 }
@@ -69,18 +70,29 @@ resource "google_service_account_iam_member" "deployer_wif_user" {
   member             = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github.name}/attribute.repository/TJ72/blog"
 }
 
-# Runtime SA (the project default compute SA that Cloud Run and the function run
-# as) — the access the app needs at runtime, least privilege: read the Firestore
-# counter and read the CV object, nothing more. (The compute SA also carries
-# GCP's default roles/editor grant, which is intentionally NOT managed here.)
+# Dedicated runtime SA for the Cloud Run blog service. Created so the
+# internet-facing container does NOT run as the project default compute SA (which
+# carries GCP's broad roles/editor). This is the least-privilege execution
+# identity: it holds only what the app actually calls at runtime, so if the
+# container is ever compromised the stolen credentials can do nothing else.
+# (The alert-to-discord function still runs as the default compute SA — its own
+# least-privilege pass is a separate step, with its build/trigger SA chain.)
+resource "google_service_account" "blog_runtime" {
+  project      = "albert-blog-2606221144"
+  account_id   = "blog-runtime"
+  display_name = "Blog Cloud Run runtime"
+}
+
+# The only access the app needs at runtime, granted to the dedicated SA: write the
+# Firestore counter (datastore.user) and read the CV object (objectViewer).
 resource "google_project_iam_member" "runtime_datastore" {
   project = "albert-blog-2606221144"
   role    = "roles/datastore.user"
-  member  = "serviceAccount:503336128890-compute@developer.gserviceaccount.com"
+  member  = "serviceAccount:${google_service_account.blog_runtime.email}"
 }
 
 resource "google_storage_bucket_iam_member" "runtime_cv_viewer" {
   bucket = google_storage_bucket.cv.name
   role   = "roles/storage.objectViewer"
-  member = "serviceAccount:503336128890-compute@developer.gserviceaccount.com"
+  member = "serviceAccount:${google_service_account.blog_runtime.email}"
 }

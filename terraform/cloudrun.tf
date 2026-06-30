@@ -34,7 +34,7 @@ resource "google_cloud_run_v2_service" "blog" {
     labels                           = {}
     max_instance_request_concurrency = 80
     revision                         = null
-    service_account                  = "503336128890-compute@developer.gserviceaccount.com"
+    service_account                  = google_service_account.blog_runtime.email
     session_affinity                 = false
     timeout                          = "300s"
     containers {
@@ -82,6 +82,15 @@ resource "google_cloud_run_v2_service" "blog" {
     tag      = null
     type     = "TRAFFIC_TARGET_ALLOCATION_TYPE_LATEST"
   }
+
+  # The new revision runs AS blog_runtime, so that SA must already hold its runtime
+  # roles before this service is updated; otherwise the first request that touches
+  # Firestore/GCS could fail in the gap before the IAM bindings exist. (IAM is also
+  # eventually-consistent, so propagation can still lag a few seconds after apply.)
+  depends_on = [
+    google_project_iam_member.runtime_datastore,
+    google_storage_bucket_iam_member.runtime_cv_viewer,
+  ]
 
   # CI/CD (gcloud run deploy) owns the image and stamps client metadata on every
   # push; Terraform owns everything else. Ignore those fields so a deploy doesn't
