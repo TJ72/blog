@@ -6,6 +6,17 @@
 terraform {
   required_version = ">= 1.5" # import blocks + -generate-config-out need 1.5+
 
+  # Remote state in a GCS bucket: durable (not tied to one laptop) and keeps the
+  # plaintext-secret state in a private, versioned bucket. The bucket is created
+  # out-of-band (see README) and deliberately NOT managed by Terraform — it's the
+  # store for this very state, so it can't depend on it (same bootstrap reason the
+  # GCP project itself is unmanaged). NOTE: backend blocks can't use variables, so
+  # the bucket name is a literal here even though project_id is a var elsewhere.
+  backend "gcs" {
+    bucket = "albert-blog-2606221144-tfstate"
+    prefix = "blog"
+  }
+
   required_providers {
     google = {
       source  = "hashicorp/google"

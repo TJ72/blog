@@ -53,12 +53,36 @@ resources.
 ## Usage
 
 ```bash
-terraform init      # download the provider (pinned in .terraform.lock.hcl)
+terraform init      # download the provider + configure the GCS backend
 terraform plan      # preview changes
 terraform apply     # converge the cloud to match this config
 ```
 
 `terraform plan` reporting **No changes** means the cloud matches the code — no drift.
+
+## State
+
+State lives in a **GCS backend** (`backend "gcs"` in `providers.tf`): bucket
+`albert-blog-2606221144-tfstate`, private + versioned. That makes it durable (not
+tied to one laptop) and keeps the plaintext-secret state off local disk.
+
+`terraform apply` still runs **locally**, with your own credentials — only the
+state is remote. (Running apply in CI would need a near-admin CI identity, which
+for a solo project enlarges the blast radius more than it's worth.)
+
+The state bucket is created **out-of-band** and is deliberately **not** managed by
+Terraform: the store for the state can't depend on that same state (the same
+bootstrap reason the GCP project itself is unmanaged). To recreate it from scratch:
+
+```bash
+gcloud storage buckets create gs://albert-blog-2606221144-tfstate \
+  --location=asia-east1 --uniform-bucket-level-access --public-access-prevention
+gcloud storage buckets update gs://albert-blog-2606221144-tfstate --versioning
+terraform init -migrate-state   # first time only: copy existing state up
+```
+
+(Backend blocks can't use variables, so the bucket name is a literal in
+`providers.tf` even though `project_id` is a variable everywhere else.)
 
 ## Testing the alert pipeline
 
@@ -90,8 +114,9 @@ state without recreating them.
 
 ## Notes / limitations
 
-- **State** is local (`terraform.tfstate`, gitignored) and can contain secrets in
-  plaintext. A team would use a remote backend (a GCS bucket).
+- **State** is in a GCS backend (see [State](#state)); it can still contain secrets
+  in plaintext, so the bucket is private + versioned. Moving the secrets out of
+  state entirely is a separate task (Secret Manager).
 - **The function's source** is referenced as the already-uploaded zip, so Terraform
   manages the function's *config* but not its *code deploy* — changing
   `../functions/alert-to-discord` still needs `gcloud functions deploy`. Managing
