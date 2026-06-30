@@ -20,3 +20,9 @@ variable "admin_token" {
   description = "Password for the /admin view-count page (Cloud Run env var ADMIN_TOKEN)."
   sensitive   = true
 }
+
+variable "session_secret" {
+  type        = string
+  description = "HMAC key that signs the /admin session cookie (Cloud Run env var SESSION_SECRET)."
+  sensitive   = true
+}

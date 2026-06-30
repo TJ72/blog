@@ -49,6 +49,10 @@ resource "google_cloud_run_v2_service" "blog" {
         name  = "ADMIN_TOKEN"
         value = var.admin_token
       }
+      env {
+        name  = "SESSION_SECRET"
+        value = var.session_secret
+      }
       ports {
         container_port = 8080
         name           = "http1"
