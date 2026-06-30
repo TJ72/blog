@@ -25,6 +25,9 @@ jobs:
   # Quality gate: lint + type-check must pass before we build and deploy.
   quality:
     runs-on: ubuntu-latest
+    # Normal run is ~30s; this only exists to kill a hung job long before the
+    # GitHub default of 6h (it does not constrain a healthy run).
+    timeout-minutes: 10
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -47,6 +50,9 @@ jobs:
   deploy:
     needs: quality
     runs-on: ubuntu-latest
+    # Normal run is ~2m (build + push + deploy); generous headroom, still well
+    # under the 6h default so a hang is caught early.
+    timeout-minutes: 15
     permissions:
       contents: read # checkout the repo
       id-token: write # REQUIRED: lets the runner mint the GitHub OIDC token for WIF
