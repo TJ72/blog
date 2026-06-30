@@ -9,7 +9,7 @@ resource "google_billing_budget" "monthly" {
   budget_filter {
     calendar_period        = "MONTH"
     credit_types_treatment = "INCLUDE_ALL_CREDITS"
-    projects               = ["projects/503336128890"]
+    projects               = ["projects/${local.project_number}"]
   }
 
   amount {

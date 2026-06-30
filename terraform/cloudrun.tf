@@ -18,7 +18,7 @@ resource "google_cloud_run_v2_service" "blog" {
   launch_stage         = "GA"
   location             = "asia-east1"
   name                 = "blog"
-  project              = "albert-blog-2606221144"
+  project              = var.project_id
   scaling {
     manual_instance_count = 0
     max_instance_count    = 3
@@ -42,7 +42,7 @@ resource "google_cloud_run_v2_service" "blog" {
       base_image_uri = null
       command        = []
       depends_on     = []
-      image          = "asia-east1-docker.pkg.dev/albert-blog-2606221144/blog/blog:9fa4dd70e1b6034c8e85d466889fdcc773b53470"
+      image          = "asia-east1-docker.pkg.dev/${var.project_id}/blog/blog:9fa4dd70e1b6034c8e85d466889fdcc773b53470"
       name           = null
       working_dir    = null
       env {

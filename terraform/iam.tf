@@ -5,7 +5,7 @@
 
 # The pool groups external (GitHub) identities.
 resource "google_iam_workload_identity_pool" "github" {
-  project                   = "albert-blog-2606221144"
+  project                   = var.project_id
   workload_identity_pool_id = "github-pool"
   display_name              = "GitHub Actions pool"
   deletion_policy           = "DELETE"
@@ -14,7 +14,7 @@ resource "google_iam_workload_identity_pool" "github" {
 # The provider trusts GitHub's OIDC issuer, maps token claims to attributes, and
 # the attribute_condition restricts the trust to this repo's owner.
 resource "google_iam_workload_identity_pool_provider" "github" {
-  project                            = "albert-blog-2606221144"
+  project                            = var.project_id
   workload_identity_pool_id          = google_iam_workload_identity_pool.github.workload_identity_pool_id
   workload_identity_pool_provider_id = "github-provider"
   display_name                       = "GitHub provider"
@@ -32,7 +32,7 @@ resource "google_iam_workload_identity_pool_provider" "github" {
 
 # The service account GitHub Actions impersonates to deploy.
 resource "google_service_account" "github_deployer" {
-  project         = "albert-blog-2606221144"
+  project         = var.project_id
   account_id      = "github-deployer"
   display_name    = "GitHub Actions deployer"
   deletion_policy = "DELETE"
@@ -41,13 +41,13 @@ resource "google_service_account" "github_deployer" {
 # Project roles: build/push images and deploy Cloud Run revisions. Deliberately
 # no IAM-admin, so the pipeline can't change who may invoke the service.
 resource "google_project_iam_member" "deployer_run_developer" {
-  project = "albert-blog-2606221144"
+  project = var.project_id
   role    = "roles/run.developer"
   member  = "serviceAccount:${google_service_account.github_deployer.email}"
 }
 
 resource "google_project_iam_member" "deployer_ar_writer" {
-  project = "albert-blog-2606221144"
+  project = var.project_id
   role    = "roles/artifactregistry.writer"
   member  = "serviceAccount:${google_service_account.github_deployer.email}"
 }
@@ -78,7 +78,7 @@ resource "google_service_account_iam_member" "deployer_wif_user" {
 # (The alert-to-discord function still runs as the default compute SA — its own
 # least-privilege pass is a separate step, with its build/trigger SA chain.)
 resource "google_service_account" "blog_runtime" {
-  project      = "albert-blog-2606221144"
+  project      = var.project_id
   account_id   = "blog-runtime"
   display_name = "Blog Cloud Run runtime"
 }
@@ -86,7 +86,7 @@ resource "google_service_account" "blog_runtime" {
 # The only access the app needs at runtime, granted to the dedicated SA: write the
 # Firestore counter (datastore.user) and read the CV object (objectViewer).
 resource "google_project_iam_member" "runtime_datastore" {
-  project = "albert-blog-2606221144"
+  project = var.project_id
   role    = "roles/datastore.user"
   member  = "serviceAccount:${google_service_account.blog_runtime.email}"
 }
@@ -108,7 +108,7 @@ resource "google_storage_bucket_iam_member" "runtime_cv_viewer" {
 # are not inherited by the running function code, so they're a lower-priority,
 # separate hardening step.
 resource "google_service_account" "alert_fn_runtime" {
-  project      = "albert-blog-2606221144"
+  project      = var.project_id
   account_id   = "alert-fn-runtime"
   display_name = "alert-to-discord function runtime"
 }

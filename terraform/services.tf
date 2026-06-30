@@ -24,7 +24,7 @@ locals {
 
 resource "google_project_service" "enabled" {
   for_each           = toset(local.project_services)
-  project            = "albert-blog-2606221144"
+  project            = var.project_id
   service            = each.value
   disable_on_destroy = false
 }

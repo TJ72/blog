@@ -9,7 +9,7 @@ resource "google_pubsub_topic" "monitoring_alerts" {
   labels                     = {}
   message_retention_duration = null
   name                       = "monitoring-alerts"
-  project                    = "albert-blog-2606221144"
+  project                    = var.project_id
   tags                       = null
 }
 
@@ -146,10 +146,10 @@ resource "google_monitoring_dashboard" "service_health" {
         yPos  = 4
       }]
     }
-    name = "projects/503336128890/dashboards/054d0080-c7eb-4494-93c1-51f54bcd1ce2"
+    name = "projects/${local.project_number}/dashboards/054d0080-c7eb-4494-93c1-51f54bcd1ce2"
   })
   deletion_policy = "DELETE"
-  project         = "503336128890"
+  project         = local.project_number
 }
 
 # __generated__ by Terraform from "projects/albert-blog-2606221144/notificationChannels/17763559937055753421"
@@ -162,7 +162,7 @@ resource "google_monitoring_notification_channel" "discord_pubsub" {
   labels = {
     topic = google_pubsub_topic.monitoring_alerts.id
   }
-  project     = "albert-blog-2606221144"
+  project     = var.project_id
   type        = "pubsub"
   user_labels = {}
 }
@@ -174,7 +174,7 @@ resource "google_monitoring_alert_policy" "uptime_failing" {
   display_name          = "blog — uptime check failing"
   enabled               = true
   notification_channels = [google_monitoring_notification_channel.discord_pubsub.id]
-  project               = "albert-blog-2606221144"
+  project               = var.project_id
   severity              = null
   user_labels           = {}
   alert_strategy {
@@ -216,7 +216,7 @@ resource "google_monitoring_uptime_check_config" "blog_home" {
   display_name       = "blog — home page (HTTPS GET /)"
   log_check_failures = false
   period             = "60s"
-  project            = "albert-blog-2606221144"
+  project            = var.project_id
   selected_regions   = ["USA", "EUROPE", "ASIA_PACIFIC"]
   timeout            = "10s"
   user_labels        = {}
@@ -238,8 +238,8 @@ resource "google_monitoring_uptime_check_config" "blog_home" {
   }
   monitored_resource {
     labels = {
-      host       = "blog-503336128890.asia-east1.run.app"
-      project_id = "albert-blog-2606221144"
+      host       = "blog-${local.project_number}.asia-east1.run.app"
+      project_id = var.project_id
     }
     type = "uptime_url"
   }
@@ -253,19 +253,19 @@ resource "google_cloudfunctions2_function" "alert_to_discord" {
   labels          = {}
   location        = "asia-east1"
   name            = "alert-to-discord"
-  project         = "albert-blog-2606221144"
+  project         = var.project_id
   build_config {
-    docker_repository     = "projects/albert-blog-2606221144/locations/asia-east1/repositories/gcf-artifacts"
+    docker_repository     = "projects/${var.project_id}/locations/asia-east1/repositories/gcf-artifacts"
     entry_point           = "alertToDiscord"
     environment_variables = {}
     runtime               = "nodejs22"
-    service_account       = "projects/albert-blog-2606221144/serviceAccounts/503336128890-compute@developer.gserviceaccount.com"
+    service_account       = "projects/${var.project_id}/serviceAccounts/${local.compute_sa}"
     worker_pool           = null
     automatic_update_policy {
     }
     source {
       storage_source {
-        bucket     = "gcf-v2-sources-503336128890-asia-east1"
+        bucket     = "gcf-v2-sources-${local.project_number}-asia-east1"
         generation = 1782704205395807
         object     = "alert-to-discord/function-source.zip"
       }
@@ -275,7 +275,7 @@ resource "google_cloudfunctions2_function" "alert_to_discord" {
     event_type            = "google.cloud.pubsub.topic.v1.messagePublished"
     pubsub_topic          = google_pubsub_topic.monitoring_alerts.id
     retry_policy          = "RETRY_POLICY_DO_NOT_RETRY"
-    service_account_email = "503336128890-compute@developer.gserviceaccount.com"
+    service_account_email = local.compute_sa
     trigger_region        = "asia-east1"
   }
   service_config {
@@ -300,8 +300,8 @@ resource "google_cloudfunctions2_function" "alert_to_discord" {
 
 # __generated__ by Terraform from "projects/albert-blog-2606221144/topics/monitoring-alerts roles/pubsub.publisher serviceAccount:service-503336128890@gcp-sa-monitoring-notification.iam.gserviceaccount.com"
 resource "google_pubsub_topic_iam_member" "monitoring_publisher" {
-  member  = "serviceAccount:service-503336128890@gcp-sa-monitoring-notification.iam.gserviceaccount.com"
-  project = "albert-blog-2606221144"
+  member  = "serviceAccount:service-${local.project_number}@gcp-sa-monitoring-notification.iam.gserviceaccount.com"
+  project = var.project_id
   role    = "roles/pubsub.publisher"
   topic   = google_pubsub_topic.monitoring_alerts.id
 }

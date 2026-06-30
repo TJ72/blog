@@ -4,7 +4,7 @@
 # deletion_policy ABANDON: destroying this Terraform resource leaves the database
 # in place, a guard against accidentally wiping data.
 resource "google_firestore_database" "default" {
-  project                           = "albert-blog-2606221144"
+  project                           = var.project_id
   name                              = "(default)"
   location_id                       = "asia-east1"
   type                              = "FIRESTORE_NATIVE"
@@ -19,7 +19,7 @@ resource "google_firestore_database" "default" {
 
 # Artifact Registry repo holding the blog's container images (CI pushes here).
 resource "google_artifact_registry_repository" "blog" {
-  project                = "albert-blog-2606221144"
+  project                = var.project_id
   location               = "asia-east1"
   repository_id          = "blog"
   description            = "Blog container images"
@@ -30,8 +30,8 @@ resource "google_artifact_registry_repository" "blog" {
 
 # Private bucket holding the CV PDF, served only through /api/cv (never public).
 resource "google_storage_bucket" "cv" {
-  project                     = "albert-blog-2606221144"
-  name                        = "albert-blog-2606221144-cv"
+  project                     = var.project_id
+  name                        = "${var.project_id}-cv"
   location                    = "ASIA-EAST1"
   storage_class               = "STANDARD"
   uniform_bucket_level_access = true
