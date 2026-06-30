@@ -63,10 +63,12 @@ export default async function AdminPage({
         </form>
       </div>
       <div className="mt-8 rounded-lg border border-line p-6">
-        <p className="text-sm text-muted">CV views / downloads</p>
+        <p className="text-sm text-muted">CV views</p>
         <p className="mt-1 text-5xl font-bold tabular-nums">{views}</p>
       </div>
-      <p className="mt-6 text-xs text-faint">Source: Firestore · live read</p>
+      <p className="mt-6 text-xs text-faint">
+        Source: Firestore · live read · bots filtered
+      </p>
     </main>
   );
 }
