@@ -26,6 +26,29 @@ resource "google_artifact_registry_repository" "blog" {
   format                 = "DOCKER"
   mode                   = "STANDARD_REPOSITORY"
   cleanup_policy_dry_run = false
+
+  # CI pushes a new SHA-tagged image on every deploy, so images would otherwise
+  # accumulate forever. KEEP takes precedence over DELETE, so these two policies
+  # together mean "retain the last 30 days of images, but always keep at least
+  # the 10 newest" — the live image is always the newest, so it is never at risk.
+  cleanup_policies {
+    id     = "keep-recent-releases"
+    action = "KEEP"
+    most_recent_versions {
+      keep_count = 10
+    }
+  }
+  cleanup_policies {
+    id     = "delete-stale"
+    action = "DELETE"
+    condition {
+      # ANY (not just UNTAGGED): our old images keep a permanent SHA tag, so an
+      # untagged-only rule would never match them. Duration in seconds to match
+      # what the API stores, which avoids a perpetual plan diff.
+      tag_state  = "ANY"
+      older_than = "2592000s" # 30 days
+    }
+  }
 }
 
 # Private bucket holding the CV PDF, served only through /api/cv (never public).
