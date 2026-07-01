@@ -50,8 +50,12 @@ export function createSession(): string | null {
   return `${payloadB64}.${sign(payloadB64, secret)}`;
 }
 
-/** Verify a token: signature matches (constant-time) AND it hasn't expired. */
-function verifySession(token: string, secret: string): boolean {
+/**
+ * Verify a token: signature matches (constant-time) AND it hasn't expired.
+ * Exported (though in-app only isAuthed calls it) so the crypto core can be
+ * unit-tested directly, without mocking the cookie store.
+ */
+export function verifySession(token: string, secret: string): boolean {
   const dot = token.indexOf(".");
   if (dot <= 0) return false;
   const payloadB64 = token.slice(0, dot);

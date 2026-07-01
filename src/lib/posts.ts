@@ -2,6 +2,11 @@ import fs from "node:fs";
 import path from "node:path";
 import matter from "gray-matter";
 
+// A build-time constant on purpose: Next's output-file tracing (@vercel/nft)
+// statically reads this path to know which files to copy into the standalone
+// image. A dynamic value here (e.g. an env override) defeats that analysis and
+// makes nft conservatively copy the whole project root. Tests mock node:fs
+// instead of redirecting this path. See posts.test.ts.
 const POSTS_DIR = path.join(process.cwd(), "content/posts");
 
 // TODO: Design category & tag features for the blog (discussed 2026-06-22).

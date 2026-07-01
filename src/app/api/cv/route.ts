@@ -1,21 +1,10 @@
 import { fileStore, viewCounter } from "@/lib/store";
+import { isBot } from "@/lib/bots";
 
 // The store backend needs the Node.js runtime (not Edge), and this handler must
 // never be prerendered or cached — every hit should serve the latest stored file.
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-
-// Best-effort filter so the vanity counter tracks human views, not the bots,
-// crawlers, link-unfurlers, and uptime probes that hit any public URL. UA strings
-// are spoofable and this list is never complete, so the count stays an
-// approximation — which is the right precision for a vanity metric.
-const BOT_UA =
-  /bot|crawl|spider|slurp|facebookexternalhit|embedly|whatsapp|preview|monitor|uptime|headless|curl|wget|python-requests|axios|go-http|okhttp/i;
-
-function isBot(request: Request): boolean {
-  const ua = request.headers.get("user-agent") ?? "";
-  return ua === "" || BOT_UA.test(ua);
-}
 
 const pdfHeaders = {
   "Content-Type": "application/pdf",
