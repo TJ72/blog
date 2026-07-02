@@ -4,6 +4,15 @@ name: Deploy to Cloud Run
 on:
   push:
     branches: [main]
+    # Skip the build+deploy for pushes that CANNOT change the shipped image —
+    # the same paths .dockerignore already excludes from the build context.
+    # terraform/ and functions/ deploy via local `terraform apply`, not CI.
+    # A mixed push still runs (skipped only if EVERY file matches), and
+    # workflow_dispatch stays as the manual escape hatch.
+    paths-ignore:
+      - "terraform/**"
+      - "functions/**"
+      - "**.md"
   workflow_dispatch:
 
 # One deploy per branch at a time. A newer push cancels an in-flight run so
@@ -55,6 +64,12 @@ jobs:
         run: pnpm typecheck
       - name: Test
         run: pnpm test
+      # A 1-second syntax gate for the Cloud Function (it has no build step of
+      # its own; a syntax error would otherwise surface only when a deploy's
+      # startup health check fails). Note functions-only pushes skip CI entirely
+      # (paths-ignore above) — there, `terraform apply` is the backstop.
+      - name: Function syntax check
+        run: node --check functions/alert-to-discord/index.js
 
   deploy:
     needs: quality
