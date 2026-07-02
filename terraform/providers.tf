@@ -29,6 +29,12 @@ terraform {
       source  = "integrations/github"
       version = "~> 6.0"
     }
+    # Zips the alert function's source at plan time (see main.tf), which is what
+    # lets Terraform detect source-code changes and redeploy the function.
+    archive = {
+      source  = "hashicorp/archive"
+      version = "~> 2.0"
+    }
   }
 }
 

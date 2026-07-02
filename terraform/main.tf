@@ -250,6 +250,43 @@ resource "google_monitoring_uptime_check_config" "blog_home" {
   }
 }
 
+# Terraform owns the function's source, end to end: this zips the three source
+# files at plan time, the bucket object below uploads the zip (new content →
+# new object generation), and the function's storage_source references that
+# generation. So editing the function code makes `terraform plan` show a diff
+# and `apply` redeploy it — no manual zip/upload/generation-bump steps, and the
+# repo can no longer drift from what's deployed. Files are listed explicitly
+# (not source_dir) so a stray local file can never leak into the deploy zip.
+data "archive_file" "alert_fn_source" {
+  type        = "zip"
+  output_path = "${path.module}/.artifacts/alert-to-discord-source.zip"
+
+  source {
+    content  = file("${path.module}/../functions/alert-to-discord/index.js")
+    filename = "index.js"
+  }
+  source {
+    content  = file("${path.module}/../functions/alert-to-discord/package.json")
+    filename = "package.json"
+  }
+  source {
+    content  = file("${path.module}/../functions/alert-to-discord/package-lock.json")
+    filename = "package-lock.json"
+  }
+}
+
+resource "google_storage_bucket_object" "alert_fn_source" {
+  bucket = "gcf-v2-sources-${local.project_number}-asia-east1"
+  # Content-addressed name, deliberately NOT "alert-to-discord/function-source.zip":
+  # that path is GCF's own staging location, and its deploy pipeline writes the
+  # source back there — sharing it meant every deploy changed "our" object's
+  # generation behind Terraform's back (a perpetual-diff feedback loop, observed
+  # 2026-07-02: identical md5 re-uploaded 1.5s after ours). A hash name is
+  # untouched by GCF, and a source change = a new name = an unambiguous diff.
+  name   = "alert-to-discord/source-${data.archive_file.alert_fn_source.output_md5}.zip"
+  source = data.archive_file.alert_fn_source.output_path
+}
+
 # __generated__ by Terraform from "projects/albert-blog-2606221144/locations/asia-east1/functions/alert-to-discord"
 resource "google_cloudfunctions2_function" "alert_to_discord" {
   deletion_policy = "DELETE"
@@ -270,13 +307,12 @@ resource "google_cloudfunctions2_function" "alert_to_discord" {
     }
     source {
       storage_source {
-        bucket = "gcf-v2-sources-${local.project_number}-asia-east1"
-        # Pinned to an exact object generation (the bucket is versioned): this is
-        # what makes Terraform the function's deployer — upload a new zip, update
-        # this number, and apply triggers the Cloud Build rebuild. 2026-07-02:
-        # ships the embed-field truncation fix + package-lock.json (npm ci).
-        generation = 1782963588372701
-        object     = "alert-to-discord/function-source.zip"
+        # Wired to the Terraform-managed source object above: a source-code
+        # change produces a new object generation, which updates this reference
+        # and triggers the Cloud Build rebuild — `apply` IS the deploy.
+        bucket     = google_storage_bucket_object.alert_fn_source.bucket
+        object     = google_storage_bucket_object.alert_fn_source.output_name
+        generation = google_storage_bucket_object.alert_fn_source.generation
       }
     }
   }

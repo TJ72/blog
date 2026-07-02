@@ -20,4 +20,8 @@ crash.*.log
 # (We rename the cleaned-up version into a permanent file before committing.)
 generated.tf
 
+# Build artifacts: the function source zip that archive_file regenerates on
+# every plan. Its CONTENT is already versioned (it's zipped from tracked files).
+.artifacts/
+
 # Keep .terraform.lock.hcl tracked — it pins provider versions for reproducibility.

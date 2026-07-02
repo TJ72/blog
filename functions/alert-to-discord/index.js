@@ -9,6 +9,10 @@ const functions = require("@google-cloud/functions-framework");
 // This is the fan-out leg of the pipeline: alert policy -> Pub/Sub -> this
 // function -> Discord. Pub/Sub decouples the alert source from the delivery code,
 // the same way SNS sits in front of a Lambda on AWS.
+//
+// Deploying: Terraform owns this function's source (terraform/main.tf zips these
+// files at plan time) — editing this file shows up in `terraform plan`, and
+// `terraform apply` rebuilds and redeploys the function. No gcloud deploy.
 functions.cloudEvent("alertToDiscord", async (cloudEvent) => {
   const webhook = process.env.DISCORD_WEBHOOK_URL;
   if (!webhook) {
