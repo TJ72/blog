@@ -6,9 +6,17 @@ import type { NextConfig } from "next";
 // resources to same-origin and blocking framing/MIME-sniffing. 'unsafe-inline' is
 // required because Next's bootstrap, next-themes, and Shiki all emit inline
 // <script>/<style> — tightening script-src with nonces is a future hardening step.
+// React's development mode uses eval() for debugging features (reconstructing
+// component call stacks); production React never calls eval. Allow it only under
+// `next dev` so the local console stays clean — the shipped policy is unchanged.
+// (next.config is evaluated per command: NODE_ENV is "development" for `next dev`
+// and "production" for `next build`, which bakes the strict header in.)
+const devUnsafeEval =
+  process.env.NODE_ENV === "development" ? " 'unsafe-eval'" : "";
+
 const contentSecurityPolicy = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline'",
+  `script-src 'self' 'unsafe-inline'${devUnsafeEval}`,
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data:",
   "font-src 'self'",
@@ -36,6 +44,9 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   // Produce a minimal, self-contained server build for Docker / Cloud Run.
   output: "standalone",
+  // Drop the default X-Powered-By: Next.js response header — no reason to
+  // advertise the framework/version class to every visitor and scanner.
+  poweredByHeader: false,
   // The Google Cloud SDKs rely on Node.js-native features (gRPC, fs) and are not
   // in Next's auto-externalized list. Keep them out of the Server Component /
   // Route Handler bundle so they're `require`d at runtime from node_modules

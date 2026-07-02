@@ -56,7 +56,12 @@ export default async function PostPage({
         ← Back home
       </Link>
       <h1 className="mt-6 text-2xl font-medium tracking-tight">{meta.title}</h1>
-      <time className="mt-2 block font-sans text-sm text-muted">{meta.date}</time>
+      <time
+        dateTime={meta.date || undefined}
+        className="mt-2 block font-sans text-sm text-muted"
+      >
+        {meta.date}
+      </time>
       <div className="prose prose-zinc mt-8 max-w-none dark:prose-invert">
         <MDXRemote
           source={content}

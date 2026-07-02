@@ -26,7 +26,7 @@ export default function Home() {
             className={link}
             href="https://nextjs.org"
             target="_blank"
-            rel="noopener"
+            rel="noopener noreferrer"
           >
             Next.js
           </a>{" "}
@@ -37,7 +37,7 @@ export default function Home() {
           Outside of code, I&apos;m into{" "}
           <span className="text-faint">⟨your interests here⟩</span>. You can find
           me on{" "}
-          <a className={link} href="#" target="_blank" rel="noopener">
+          <a className={link} href="#" target="_blank" rel="noopener noreferrer">
             GitHub
           </a>
           , or read my{" "}
@@ -55,7 +55,12 @@ export default function Home() {
           {posts.map((post) => (
             <li key={post.slug} className="group">
               <Link href={`/blog/${post.slug}`} className="block">
-                <time className="font-sans text-sm text-muted">{post.date}</time>
+                <time
+                  dateTime={post.date || undefined}
+                  className="font-sans text-sm text-muted"
+                >
+                  {post.date}
+                </time>
                 <h3 className="mt-1 text-lg font-medium tracking-tight group-hover:underline">
                   {post.title}
                 </h3>

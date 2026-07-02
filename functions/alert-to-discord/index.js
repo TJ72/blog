@@ -34,9 +34,12 @@ functions.cloudEvent("alertToDiscord", async (cloudEvent) => {
     description: (incident.summary ?? "No summary provided.").slice(0, 4096),
     url: incident.url || undefined,
     color: isOpen ? 0xe74c3c : 0x2ecc71,
+    // Field values are capped like title/description above: Discord rejects the
+    // whole webhook (400) if any field value exceeds 1024 chars, and a dropped
+    // alert is the worst failure mode this function can have.
     fields: [
-      incident.condition_name && { name: "Condition", value: String(incident.condition_name), inline: true },
-      incident.resource_name && { name: "Resource", value: String(incident.resource_name), inline: true },
+      incident.condition_name && { name: "Condition", value: String(incident.condition_name).slice(0, 1024), inline: true },
+      incident.resource_name && { name: "Resource", value: String(incident.resource_name).slice(0, 1024), inline: true },
     ].filter(Boolean),
     timestamp: new Date().toISOString(),
     footer: { text: `incident ${incident.incident_id ?? "unknown"}` },

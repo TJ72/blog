@@ -22,6 +22,8 @@ Docker, CI/CD, and GCP deeply by taking the manual path first, then automating i
 - **State:** Firestore (view counter) + Cloud Storage (CV PDF)
 - **Hosting:** GCP Cloud Run (containerised, scale-to-zero), `output: "standalone"`
 - **CI/CD:** GitHub Actions + Workload Identity Federation (no service-account keys)
+- **Testing:** Vitest unit tests (session crypto, MDX parsing, bot filtering),
+  gating every deploy in CI
 - **Tooling:** pnpm, Node 22, Docker
 
 ## Architecture
@@ -48,19 +50,24 @@ flowchart LR
     classDef ext fill:#ffffff,stroke:#999999;
 ```
 
-**Shipping a change.** A push to `main` triggers GitHub Actions, which
+**Shipping a change.** A push to `main` triggers GitHub Actions. A quality gate
+(ESLint, type-check, unit tests) must pass first; the deploy job then
 authenticates to GCP by exchanging a short-lived OIDC token for a GCP access
-token (Workload Identity Federation — no long-lived JSON keys live in the repo).
-It builds the image, pushes it to Artifact Registry tagged with the commit SHA,
-and deploys that exact image to Cloud Run as a new revision.
+token (Workload Identity Federation — no long-lived JSON keys live in the repo,
+and the trust is pinned so only workflows on this repo's `main` branch can
+exchange a token at all). It builds the image, pushes it to Artifact Registry
+tagged with the commit SHA, and deploys that exact image to Cloud Run as a new
+revision.
 
 ```mermaid
 flowchart LR
-    dev([git push to main]):::ext --> oidc
+    dev([git push to main]):::ext --> quality
 
     subgraph gh["GitHub Actions — deploy.yml"]
+        quality["quality gate<br/>lint + type-check + tests"]
         oidc["mint OIDC token"]
         build["docker build (amd64)<br/>tag :SHA and :latest"]
+        quality --> oidc
         oidc --> build
     end
 
@@ -88,6 +95,12 @@ separate service accounts, each scoped to only what it needs:
 - **Runtime SA** (used by the container): `datastore.user` +
   bucket-scoped `storage.objectViewer`. It can read the counter and the CV, and
   nothing else.
+
+**Secrets stay out of everything.** The admin password, the session-signing key,
+and the Discord webhook live in Secret Manager and are injected at runtime; each
+service account can read only the secrets it needs. The secret *values* are added
+out-of-band (`gcloud secrets versions add`), so they never pass through the repo,
+CI logs, or Terraform state.
 
 **Observability.** A Cloud Monitoring uptime check probes the home page every
 minute from three continents. If it fails from more than one location, an alert
@@ -133,9 +146,19 @@ The "why" behind the non-obvious choices:
   two-line rebind in the composition root with no other app changes. This is the
   hexagonal (ports-and-adapters) pattern, and a concrete take on avoiding vendor
   lock-in: most coupling is confined to one swappable file.
-- **`--max-instances` as the real cost ceiling** — a billing budget only *alerts*;
-  capping instances is what actually bounds spend. It's set to 3 and codified in
-  `deploy.yml` so the ceiling lives in version control, not out-of-band config.
+- **Signed session cookie, never the password** — the `/admin` session cookie
+  holds an HMAC-signed, self-expiring token (the standard signed-cookie
+  construction, on `node:crypto`), verified in constant time. A leaked cookie
+  can't be reversed into the password or outlive its expiry, and rotating the
+  signing key invalidates every session at once.
+- **`max_instances` as the real cost ceiling** — a billing budget only *alerts*;
+  capping instances is what actually bounds spend. It's set to 3 and declared in
+  Terraform (`terraform/cloudrun.tf`), which owns the service configuration; CI
+  only ever swaps the image.
+- **Bounded image history** — an Artifact Registry cleanup policy retains the
+  last 30 days of images but always the 10 newest (KEEP outranks DELETE), so
+  per-commit pushes can't grow storage forever while recent rollback targets
+  stay available.
 - **Alerting via Pub/Sub fan-out, not a direct webhook** — Cloud Monitoring has no
   native Discord channel, so the alert policy publishes to a Pub/Sub topic and a
   Cloud Function formats and forwards it. Pub/Sub decouples the alert source from
@@ -158,7 +181,12 @@ pnpm install
 pnpm dev
 ```
 
-Open http://localhost:3000.
+Open http://localhost:3000. The same three checks CI gates deploys on run
+locally as:
+
+```bash
+pnpm lint && pnpm typecheck && pnpm test
+```
 
 The CV and view-counter routes talk to Firestore and Cloud Storage, so they need
 Google credentials. Locally, run `gcloud auth application-default login` once to
@@ -190,9 +218,12 @@ src/lib/              app-side libraries
   store.ts            cloud-neutral ports (ViewCounter, FileStore) + composition root
   adapters/gcp.ts     the only module that imports the Google Cloud SDK
   posts.ts            MDX posts loader
-  auth.ts             admin session helpers
-terraform/            infrastructure as code — monitoring, CI/CD identity (WIF),
-                      and data backends (Firestore, GCS bucket, Artifact Registry)
+  auth.ts             admin session helpers (HMAC-signed session tokens)
+  bots.ts             user-agent bot filter for the view counter
+  *.test.ts           Vitest unit tests (run in CI; never traced into the image)
+terraform/            infrastructure as code — the Cloud Run service, secrets +
+                      IAM, CI/CD identity (WIF), monitoring, budget, and data
+                      backends (Firestore, GCS bucket, Artifact Registry)
 functions/            standalone Cloud Functions (source)
   alert-to-discord/   relays alerts from Pub/Sub to a Discord webhook
 Dockerfile            multi-stage build → standalone runtime image

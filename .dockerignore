@@ -4,6 +4,11 @@ node_modules
 out
 *.tsbuildinfo
 
+# Tests — never traced into the standalone output anyway; excluding them keeps
+# the build context lean and a test-only change from invalidating the COPY layer.
+*.test.ts
+vitest.config.ts
+
 # Version control & meta
 .git
 .gitignore

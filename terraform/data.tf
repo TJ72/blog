@@ -2,7 +2,9 @@
 
 # Firestore (Native) — the view counter lives here (doc stats/cv, field views).
 # deletion_policy ABANDON: destroying this Terraform resource leaves the database
-# in place, a guard against accidentally wiping data.
+# in place, a guard against accidentally wiping data. delete_protection guards
+# the other direction — a stray console/gcloud delete of the database itself
+# (ABANDON only protects against Terraform's own destroy).
 resource "google_firestore_database" "default" {
   project                           = var.project_id
   name                              = "(default)"
@@ -11,7 +13,7 @@ resource "google_firestore_database" "default" {
   app_engine_integration_mode       = "DISABLED"
   concurrency_mode                  = "PESSIMISTIC"
   database_edition                  = "STANDARD"
-  delete_protection_state           = "DELETE_PROTECTION_DISABLED"
+  delete_protection_state           = "DELETE_PROTECTION_ENABLED"
   point_in_time_recovery_enablement = "POINT_IN_TIME_RECOVERY_DISABLED"
   realtime_updates_mode             = "REALTIME_UPDATES_MODE_ENABLED"
   deletion_policy                   = "ABANDON"

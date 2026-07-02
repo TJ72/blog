@@ -270,8 +270,12 @@ resource "google_cloudfunctions2_function" "alert_to_discord" {
     }
     source {
       storage_source {
-        bucket     = "gcf-v2-sources-${local.project_number}-asia-east1"
-        generation = 1782704205395807
+        bucket = "gcf-v2-sources-${local.project_number}-asia-east1"
+        # Pinned to an exact object generation (the bucket is versioned): this is
+        # what makes Terraform the function's deployer — upload a new zip, update
+        # this number, and apply triggers the Cloud Build rebuild. 2026-07-02:
+        # ships the embed-field truncation fix + package-lock.json (npm ci).
+        generation = 1782963588372701
         object     = "alert-to-discord/function-source.zip"
       }
     }
