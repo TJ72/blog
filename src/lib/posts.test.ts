@@ -91,6 +91,13 @@ describe("getPostBySlug", () => {
     expect(content.trim()).toBe("Hello body");
   });
 
+  it("normalizes an unquoted YAML date (parsed as a Date object) to the ISO day", () => {
+    // No quotes around the date: YAML resolves it to a Date object, the exact
+    // frontmatter mistake this guards against.
+    writePost("unquoted.mdx", '---\ntitle: "U"\ndate: 2026-01-02\n---\nx');
+    expect(getPostBySlug("unquoted").meta.date).toBe("2026-01-02");
+  });
+
   it("falls back sensibly when fields are missing or the wrong type", () => {
     // No title, no date; description is a number and tags is a bare string —
     // both wrong types, so both should drop to undefined.

@@ -12,13 +12,16 @@ resource "google_iam_workload_identity_pool" "github" {
 }
 
 # The provider trusts GitHub's OIDC issuer, maps token claims to attributes, and
-# the attribute_condition restricts the trust to this repo's owner.
+# the attribute_condition pins the trust to this repo AND its main branch — the
+# deploy workflow's real intent. Push and workflow_dispatch runs on main carry
+# ref refs/heads/main; a workflow on any other branch (or a PR run, which sees a
+# merge ref) is rejected at the token exchange, before IAM is even consulted.
 resource "google_iam_workload_identity_pool_provider" "github" {
   project                            = var.project_id
   workload_identity_pool_id          = google_iam_workload_identity_pool.github.workload_identity_pool_id
   workload_identity_pool_provider_id = "github-provider"
   display_name                       = "GitHub provider"
-  attribute_condition                = "assertion.repository_owner == 'TJ72'"
+  attribute_condition                = "assertion.repository == 'TJ72/blog' && assertion.ref == 'refs/heads/main'"
   attribute_mapping = {
     "google.subject"             = "assertion.sub"
     "attribute.repository"       = "assertion.repository"

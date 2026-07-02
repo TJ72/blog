@@ -58,7 +58,11 @@ resource "google_storage_bucket" "cv" {
   location                    = "ASIA-EAST1"
   storage_class               = "STANDARD"
   uniform_bucket_level_access = true
-  public_access_prevention    = "inherited"
+  # "enforced" (not "inherited"): public IAM grants on this bucket are rejected
+  # outright, so the CV can never be exposed by a mis-click. The runtime SA's
+  # explicit objectViewer grant is unaffected — this only forbids allUsers/
+  # allAuthenticatedUsers bindings.
+  public_access_prevention = "enforced"
   soft_delete_policy {
     retention_duration_seconds = 604800
   }

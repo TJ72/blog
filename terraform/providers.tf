@@ -19,8 +19,11 @@ terraform {
 
   required_providers {
     google = {
+      # Pessimistic (~>) so `init -upgrade` can take minor/patch releases but
+      # never a future major 8 with breaking changes. Day-to-day the lock file
+      # pins the exact version; this constraint is the guard for upgrade day.
       source  = "hashicorp/google"
-      version = ">= 6.0"
+      version = "~> 7.38"
     }
     github = {
       source  = "integrations/github"

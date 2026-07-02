@@ -238,6 +238,11 @@ resource "google_monitoring_uptime_check_config" "blog_home" {
   }
   monitored_resource {
     labels = {
+      # Deliberately NOT derived from google_cloud_run_v2_service.blog.uri: that
+      # attribute returns the LEGACY random-tag URL (blog-…-de.a.run.app), while
+      # this is the newer deterministic URL. host is immutable, so switching
+      # would force-replace the check (new check_id, metric history reset, a
+      # monitoring gap during apply) just to probe an older URL format.
       host       = "blog-${local.project_number}.asia-east1.run.app"
       project_id = var.project_id
     }

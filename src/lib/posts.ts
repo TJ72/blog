@@ -51,7 +51,16 @@ export function getPostBySlug(slug: string): Post {
     meta: {
       slug,
       title: typeof data.title === "string" ? data.title : slug,
-      date: typeof data.date === "string" ? data.date : "",
+      // YAML parses an UNQUOTED date (date: 2026-01-02) into a Date object, not
+      // a string — without the instanceof branch such a post would silently
+      // render an empty date and sort to the bottom. Normalize it back to the
+      // ISO day string (Date is at UTC midnight, so the day survives the slice).
+      date:
+        typeof data.date === "string"
+          ? data.date
+          : data.date instanceof Date
+            ? data.date.toISOString().slice(0, 10)
+            : "",
       description:
         typeof data.description === "string" ? data.description : undefined,
       tags: Array.isArray(data.tags) ? (data.tags as string[]) : undefined,
@@ -64,5 +73,5 @@ export function getPostBySlug(slug: string): Post {
 export function getAllPosts(): PostMeta[] {
   return getPostSlugs()
     .map((slug) => getPostBySlug(slug).meta)
-    .sort((a, b) => (a.date < b.date ? 1 : -1));
+    .sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
 }

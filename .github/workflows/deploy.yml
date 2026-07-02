@@ -15,6 +15,13 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# Least-privilege default GITHUB_TOKEN for every job: the quality job only reads
+# the repo. If a compromised third-party action ever runs here, the token it can
+# steal is read-only. The deploy job declares its own block (adding id-token for
+# WIF), which replaces — not extends — this one.
+permissions:
+  contents: read
+
 env:
   PROJECT_ID: albert-blog-2606221144
   REGION: asia-east1

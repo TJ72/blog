@@ -8,8 +8,10 @@
 locals {
   project_services = [
     "cloudresourcemanager.googleapis.com", # foundational: read/manage project IAM
+    "iam.googleapis.com",                  # dedicated service accounts (iam.tf)
     "run.googleapis.com",                  # Cloud Run (the blog)
     "artifactregistry.googleapis.com",     # container images
+    "storage.googleapis.com",              # CV bucket + the Terraform state bucket
     "firestore.googleapis.com",            # view counter
     "monitoring.googleapis.com",           # uptime check, alert policy, dashboard
     "pubsub.googleapis.com",               # alert transport
