@@ -7,6 +7,7 @@ import rehypePrettyCode, {
   type Options as RehypePrettyCodeOptions,
 } from "rehype-pretty-code";
 import { getAllPosts, getPostBySlug, postExists } from "@/lib/posts";
+import { SITE_NAME } from "@/lib/site";
 
 // Syntax highlighting via Shiki (runs at build time → zero client JS).
 // Dual theme emits CSS variables (--shiki-light / --shiki-dark) that we switch
@@ -34,7 +35,24 @@ export async function generateMetadata({
   const { slug } = await params;
   if (!postExists(slug)) return {};
   const { meta } = getPostBySlug(slug);
-  return { title: meta.title, description: meta.description };
+  return {
+    title: meta.title,
+    description: meta.description,
+    // The service answers on two Cloud Run hostnames (deterministic + legacy
+    // random-tag); canonical tells search engines which one is the real page.
+    alternates: { canonical: `/blog/${slug}` },
+    // Metadata merges SHALLOWLY across segments: setting openGraph here
+    // replaces the layout's whole openGraph object, so siteName must be
+    // restated. Relative URLs resolve against the layout's metadataBase.
+    openGraph: {
+      siteName: SITE_NAME,
+      title: meta.title,
+      description: meta.description,
+      type: "article",
+      publishedTime: meta.date || undefined,
+      url: `/blog/${slug}`,
+    },
+  };
 }
 
 export default async function PostPage({

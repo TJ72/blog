@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getAllPosts } from "@/lib/posts";
+import { SocialLinks } from "./social-links";
 
 // Inline-link style for the bio prose — leerob's understated underline.
 const link =
@@ -37,7 +38,12 @@ export default function Home() {
           Outside of code, I&apos;m into{" "}
           <span className="text-faint">⟨your interests here⟩</span>. You can find
           me on{" "}
-          <a className={link} href="#" target="_blank" rel="noopener noreferrer">
+          <a
+            className={link}
+            href="https://github.com/TJ72"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             GitHub
           </a>
           , or read my{" "}
@@ -47,6 +53,8 @@ export default function Home() {
           .
         </p>
       </div>
+
+      <SocialLinks />
 
       {/* Writing */}
       <section className="mt-16">
