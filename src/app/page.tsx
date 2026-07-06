@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getAllPosts } from "@/lib/posts";
+import { SITE_DESCRIPTION } from "@/lib/site";
 import { SocialLinks } from "./social-links";
 
 // Inline-link style for the bio prose — leerob's understated underline.
@@ -13,9 +14,9 @@ export default function Home() {
     <main className="mx-auto w-full max-w-(--w-content) px-6 py-24">
       {/* Bio / intro — leerob-style: name as the h1, then prose with inline links. */}
       <h1 className="text-2xl font-medium tracking-tight">Albert Tseng</h1>
-      <p className="mt-1 italic text-muted">
-        Notes on software development and learning the cloud.
-      </p>
+      {/* Same string as the <meta> description on purpose — one source in
+          lib/site.ts, so editing the tagline updates both. */}
+      <p className="mt-1 italic text-muted">{SITE_DESCRIPTION}</p>
 
       {/* TODO(Albert): replace this placeholder bio with your own words + links. */}
       <div className="mt-8 space-y-4 leading-relaxed">

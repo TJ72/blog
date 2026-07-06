@@ -117,4 +117,12 @@ describe("getAllPosts", () => {
     writePost("mid.mdx", '---\ntitle: "Mid"\ndate: "2023-06-15"\n---\nx');
     expect(getAllPosts().map((p) => p.slug)).toEqual(["new", "mid", "old"]);
   });
+
+  it("breaks a date tie by slug, so the order is deterministic", () => {
+    // Insert in reverse-alphabetical order to prove the sort (not the
+    // filesystem enumeration order) decides the outcome.
+    writePost("zebra.mdx", '---\ntitle: "Z"\ndate: "2026-01-01"\n---\nx');
+    writePost("apple.mdx", '---\ntitle: "A"\ndate: "2026-01-01"\n---\nx');
+    expect(getAllPosts().map((p) => p.slug)).toEqual(["apple", "zebra"]);
+  });
 });

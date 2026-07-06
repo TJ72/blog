@@ -68,7 +68,7 @@ export default function RootLayout({
           {/* Chrome-less, leerob-style: no header/footer. The theme control is
               the only persistent chrome — a small System/Light/Dark pill fixed
               bottom-right, reachable on every page. */}
-          <div className="fixed bottom-4 right-12 z-50">
+          <div className="fixed bottom-4 right-12 z-(--z-overlay)">
             <ThemeToggle />
           </div>
           {children}

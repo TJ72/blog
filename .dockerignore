@@ -12,6 +12,7 @@ vitest.config.ts
 # Version control & meta
 .git
 .gitignore
+.github
 
 # Local env & misc
 .env*.local

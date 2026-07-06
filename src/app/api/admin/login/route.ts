@@ -10,8 +10,16 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
-  const form = await request.formData();
-  const password = form.get("password");
+  // formData() throws on a body that isn't a form (scanners posting JSON or
+  // garbage content types). That's a bad login attempt, not a server error —
+  // fall through with no password instead of letting the route 500.
+  let password: FormDataEntryValue | null = null;
+  try {
+    const form = await request.formData();
+    password = form.get("password");
+  } catch {
+    // leave password null → same path as a wrong password below
+  }
 
   // On a correct password, mint a signed session token (createSession returns
   // null if SESSION_SECRET is missing, so we fail closed).

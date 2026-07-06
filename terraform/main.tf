@@ -17,7 +17,6 @@ resource "google_pubsub_topic" "monitoring_alerts" {
 resource "google_monitoring_dashboard" "service_health" {
   dashboard_json = jsonencode({
     displayName = "Blog — Service Health"
-    etag        = "7cac12822a16c88f49fd02acd636f804"
     mosaicLayout = {
       columns = 12
       tiles = [{

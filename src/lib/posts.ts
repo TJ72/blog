@@ -69,9 +69,14 @@ export function getPostBySlug(slug: string): Post {
   };
 }
 
-/** All posts' metadata, newest first. */
+/** All posts' metadata, newest first; date ties break by slug so the order
+ *  never depends on filesystem enumeration. */
 export function getAllPosts(): PostMeta[] {
   return getPostSlugs()
     .map((slug) => getPostBySlug(slug).meta)
-    .sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
+    .sort(
+      (a, b) =>
+        (a.date < b.date ? 1 : a.date > b.date ? -1 : 0) ||
+        a.slug.localeCompare(b.slug),
+    );
 }

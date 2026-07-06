@@ -66,7 +66,4 @@ data "google_project" "this" {}
 
 locals {
   project_number = data.google_project.this.number
-  # GCP's default Compute Engine service account. The function's build (Cloud
-  # Build) and trigger (Eventarc) identities still run as it; see iam.tf.
-  compute_sa = "${data.google_project.this.number}-compute@developer.gserviceaccount.com"
 }
