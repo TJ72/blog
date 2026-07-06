@@ -27,10 +27,15 @@ jobs:
         uses: actions/checkout@v7
       # Pin Node to the Cloud Functions runtime (nodejs22 in terraform/main.tf)
       # so "does it parse" is answered by the same parser production uses.
+      # package-manager-cache off: v5 sees `packageManager: pnpm` in the root
+      # package.json and tries to set up pnpm caching — but this job installs
+      # nothing, and pnpm isn't on PATH here (no corepack step), so the default
+      # fails the run.
       - name: Set up Node
         uses: actions/setup-node@v5
         with:
           node-version: 22
+          package-manager-cache: false
       # `git ls-files` lists only COMMITTED .js files (node_modules never
       # appears), and `**` matches nested directories — so a second function
       # added later is covered automatically. The step's shell runs with -e,
