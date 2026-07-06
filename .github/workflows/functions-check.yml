@@ -1,0 +1,43 @@
+name: Functions syntax check
+
+# Companion to deploy.yml: that pipeline skips functions-only pushes entirely
+# (paths-ignore), so without this a broken functions/ file would surface only
+# when the next `terraform apply` deploys it. This runs ONLY when functions/
+# (or this file) changes, and only syntax-checks — deploys stay local via
+# `terraform apply`, per the standing decision.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "functions/**"
+      - ".github/workflows/functions-check.yml"
+  workflow_dispatch:
+
+# Same least-privilege stance as deploy.yml: checkout needs read, nothing more.
+permissions:
+  contents: read
+
+jobs:
+  syntax:
+    runs-on: ubuntu-latest
+    # Healthy run is ~10s; this only caps a hung job (GitHub default is 6h).
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      # Pin Node to the Cloud Functions runtime (nodejs22 in terraform/main.tf)
+      # so "does it parse" is answered by the same parser production uses.
+      - name: Set up Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      # `git ls-files` lists only COMMITTED .js files (node_modules never
+      # appears), and `**` matches nested directories — so a second function
+      # added later is covered automatically. The step's shell runs with -e,
+      # so the first file that fails to parse fails the job.
+      - name: Syntax-check function sources
+        run: |
+          for f in $(git ls-files 'functions/**/*.js'); do
+            echo "checking $f"
+            node --check "$f"
+          done

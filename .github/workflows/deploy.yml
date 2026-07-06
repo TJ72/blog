@@ -66,8 +66,8 @@ jobs:
         run: pnpm test
       # A 1-second syntax gate for the Cloud Function (it has no build step of
       # its own; a syntax error would otherwise surface only when a deploy's
-      # startup health check fails). Note functions-only pushes skip CI entirely
-      # (paths-ignore above) — there, `terraform apply` is the backstop.
+      # startup health check fails). Functions-only pushes skip this pipeline
+      # (paths-ignore above) — those are covered by functions-check.yml.
       - name: Function syntax check
         run: node --check functions/alert-to-discord/index.js
 
