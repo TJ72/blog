@@ -60,6 +60,14 @@ const nextConfig: NextConfig = {
   // dependency went missing). Bundling compiles storage + its deps into the
   // server chunk, so there's nothing to resolve from node_modules at runtime.
   serverExternalPackages: ["@google-cloud/firestore"],
+  experimental: {
+    // React <ViewTransition> integration: route navigations run inside the
+    // browser's View Transitions API, so elements sharing a name on both pages
+    // (post title/date on home ↔ post page) morph instead of swapping.
+    // Experimental flag — acceptable for a personal blog; browsers without the
+    // API simply skip the animation.
+    viewTransition: true,
+  },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },

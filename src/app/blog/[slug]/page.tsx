@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { ViewTransition } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { MDXRemote } from "next-mdx-remote/rsc";
@@ -73,7 +74,15 @@ export default async function PostPage({
       >
         ← Back home
       </Link>
-      <h1 className="mt-6 text-2xl font-medium tracking-tight">{meta.title}</h1>
+      {/* Name matches the home list entry for this slug — that pairing is what
+          makes the title morph across the navigation. Only the title is
+          paired: the date's position relative to the title flips between the
+          two layouts, so morphing it as well made the elements cross paths. */}
+      <ViewTransition name={`post-title-${slug}`} share="morph">
+        <h1 className="mt-6 text-2xl font-medium tracking-tight">
+          {meta.title}
+        </h1>
+      </ViewTransition>
       <time
         dateTime={meta.date || undefined}
         className="mt-2 block font-sans text-sm text-muted"

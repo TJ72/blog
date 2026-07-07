@@ -1,3 +1,4 @@
+import { ViewTransition } from "react";
 import Link from "next/link";
 import { getAllPosts } from "@/lib/posts";
 import { SITE_DESCRIPTION } from "@/lib/site";
@@ -70,9 +71,20 @@ export default function Home() {
                 >
                   {post.date}
                 </time>
-                <h3 className="mt-1 text-lg font-medium tracking-tight group-hover:underline">
-                  {post.title}
-                </h3>
+                {/* Same ViewTransition name as the post page's h1: the browser
+                    pairs the two snapshots by name during navigation and
+                    animates position + size, so the title visibly travels into
+                    the article header instead of being swapped out. The title
+                    is deliberately the ONLY paired element — date sits above
+                    the title here but below it on the post page, so pairing it
+                    too made the two elements cross paths mid-flight.
+                    share="morph" tags the pair for the timing CSS in
+                    globals.css. */}
+                <ViewTransition name={`post-title-${post.slug}`} share="morph">
+                  <h3 className="mt-1 text-lg font-medium tracking-tight group-hover:underline">
+                    {post.title}
+                  </h3>
+                </ViewTransition>
                 {post.description && (
                   <p className="mt-1 italic text-muted">{post.description}</p>
                 )}

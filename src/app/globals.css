@@ -143,6 +143,29 @@ pre {
 }
 
 /* ---------------------------------------------------------------------------
+   View transitions — the post title/date morph between the home list and the
+   article header (paired by name via <ViewTransition> in the pages).
+   share="morph" puts the .morph class on those transition groups; the browser
+   supplies the position/size animation, we only set how long it runs, using
+   the motion tokens above so it moves like everything else on the site.
+   --------------------------------------------------------------------------- */
+::view-transition-group(.morph) {
+  animation-duration: var(--duration);
+  animation-timing-function: var(--ease-standard);
+}
+
+/* Motion sensitivity: collapse every view-transition animation to an instant
+   swap (duration 0 keeps the lifecycle intact, unlike `animation: none`). */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(*),
+  ::view-transition-new(*),
+  ::view-transition-group(*) {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
+  }
+}
+
+/* ---------------------------------------------------------------------------
    Syntax highlighting — rehype-pretty-code + Shiki (highlighted at build time).
    The dual theme emits per-token CSS variables (--shiki-light / --shiki-dark);
    keepBackground:false means we own the block background here. The border uses
