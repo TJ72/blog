@@ -10,4 +10,4 @@ export const SITE_URL = "https://blog-503336128890.asia-east1.run.app";
 
 export const SITE_NAME = "Albert's Blog";
 export const SITE_DESCRIPTION =
-  "Notes on software development and learning the cloud.";
+  "Frontend developer, learning the cloud by building on it.";

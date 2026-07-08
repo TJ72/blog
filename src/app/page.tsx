@@ -4,10 +4,6 @@ import { getAllPosts } from "@/lib/posts";
 import { SITE_DESCRIPTION } from "@/lib/site";
 import { SocialLinks } from "./social-links";
 
-// Inline-link style for the bio prose — leerob's understated underline.
-const link =
-  "underline decoration-faint underline-offset-[3px] transition-colors hover:decoration-ink";
-
 export default function Home() {
   const posts = getAllPosts();
 
@@ -19,40 +15,18 @@ export default function Home() {
           lib/site.ts, so editing the tagline updates both. */}
       <p className="mt-1 italic text-muted">{SITE_DESCRIPTION}</p>
 
-      {/* TODO(Albert): replace this placeholder bio with your own words + links. */}
       <div className="mt-8 space-y-4 leading-relaxed">
         <p>
-          I&apos;m a frontend developer based in Taiwan, currently going deep on
-          cloud and deployment. This site is my playground for that — built from
-          scratch with{" "}
-          <a
-            className={link}
-            href="https://nextjs.org"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Next.js
-          </a>{" "}
-          and shipped to Google Cloud Run. I&apos;m also studying for the AWS
-          Solutions Architect Associate exam.
+          I&apos;m a frontend developer from Taiwan, moving to Australia in
+          September 2026 — and open to opportunities there. I believe curiosity
+          compounds: I started out centering divs, and three years later
+          I&apos;m writing Terraform for the infrastructure this blog runs on.
+          The writing here is the interest it pays out.
         </p>
         <p>
-          Outside of code, I&apos;m into{" "}
-          <span className="text-faint">⟨your interests here⟩</span>. You can find
-          me on{" "}
-          <a
-            className={link}
-            href="https://github.com/TJ72"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            GitHub
-          </a>
-          , or read my{" "}
-          <a className={link} href="/api/cv" target="_blank" rel="noopener">
-            CV
-          </a>
-          .
+          Outside of code, weekends go to reading and sitcoms: currently{" "}
+          <em>Rick and Morty</em>, <em>How I Met Your Mother</em> three times
+          over, and <em>The Big Bang Theory</em> forever on the list.
         </p>
       </div>
 
