@@ -1,0 +1,147 @@
+---
+title: "A title that travels: View Transitions in Next.js 16"
+date: "2026-07-09"
+description: "How I dissected a blog I admired, rebuilt its signature transition in Next.js 16, and learned when not to animate."
+tags: ["nextjs", "react", "frontend"]
+---
+
+If you clicked into this post from the home page, you've already seen
+everything this article is about: the title you clicked didn't get swapped out
+with the rest of the page — it travelled, sliding and resizing itself into the
+article header above.
+
+I didn't invent this. I took it from someone else's blog.
+
+## The blog I couldn't stop clicking
+
+One evening I caught myself doing something silly on
+[blog.kalan.dev](https://blog.kalan.dev/): opening a post, going back, opening
+another one — not to read, just to feel the navigation. The post title slid
+from the list into the article header like it was one continuous thing, and
+everything else quietly crossfaded around it.
+
+I wanted it. So I opened DevTools and started asking questions.
+
+**Question 1: is this an animation library, or the native View Transitions
+API?** Cheap way to find out — wrap the API before clicking anything:
+
+```js
+const original = document.startViewTransition.bind(document);
+document.startViewTransition = (...args) => {
+  console.log("native view transition!");
+  return original(...args);
+};
+```
+
+The log fired on every navigation. Native API, no library — just the browser.
+
+**Question 2: why does the title morph while everything else fades?**
+Inspecting both pages gave it away: the home page's `h3` and the article
+page's `h1` carry the same `view-transition-name`, something like
+`post-title-<slug>`. Same name on both sides, so the browser pairs them.
+
+The site handed me a control group, too. Posts in one section of the blog
+*don't* have the paired name — and clicking those gives a plain crossfade, no
+morph. Accidental proof that the pairing is what does the work.
+
+## Thirty seconds of theory
+
+When a page calls `document.startViewTransition(update)`, the browser:
+
+1. snapshots the current state of the page,
+2. runs your `update` callback (the DOM changes underneath),
+3. snapshots the new state, and animates between the two.
+
+By default the whole page crossfades. But any element with a
+`view-transition-name` gets its own snapshot pair, and if an element on the
+old page and an element on the new page share the same name, the browser
+treats them as *the same thing* and animates position and size between them.
+
+That's the entire trick. No animation library, no FLIP math, no measuring
+layouts in JavaScript. You name two elements; the browser does the travel.
+
+## The Next.js 16 version
+
+Next.js 16 wires this into client-side navigation so you never call
+`startViewTransition` yourself. Three pieces.
+
+**1. Turn on the experimental flag** in `next.config.ts`:
+
+```ts
+import type { NextConfig } from "next";
+
+const nextConfig: NextConfig = {
+  experimental: {
+    viewTransition: true,
+  },
+};
+```
+
+**2. Wrap both elements** with React's `ViewTransition` component — it comes
+from `react` itself, not from Next:
+
+```tsx
+// app/page.tsx — the post list
+import { ViewTransition } from "react";
+
+<ViewTransition name={`post-title-${post.slug}`} share="morph">
+  <h3>{post.title}</h3>
+</ViewTransition>
+```
+
+```tsx
+// app/blog/[slug]/page.tsx — the article header
+<ViewTransition name={`post-title-${slug}`} share="morph">
+  <h1>{meta.title}</h1>
+</ViewTransition>
+```
+
+Same `name` on both sides — that's the pairing. React is smart about it:
+the `view-transition-name` is only applied at transition time, and the pages
+themselves stay fully static. This blog is SSG end to end, and adding the
+morph didn't change that.
+
+**3. Set the timing in CSS.** The `share="morph"` prop tags the pair with a
+class, so plain CSS can target it. The browser supplies the position/size
+keyframes; I only tell it how long to run, using the same motion tokens as
+every other transition on this site:
+
+```css
+::view-transition-group(.morph) {
+  animation-duration: var(--duration);
+  animation-timing-function: var(--ease-standard);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(*),
+  ::view-transition-new(*),
+  ::view-transition-group(*) {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
+  }
+}
+```
+
+Two details worth copying. Browsers without the API just skip the animation —
+navigation works fine, so this is progressive enhancement, which is also why
+I'm comfortable shipping an experimental feature on a personal blog. And for
+`prefers-reduced-motion`, collapse the duration to `0s` instead of setting
+`animation: none` — a zero-duration animation keeps the whole lifecycle
+intact (same events, same promises, just instant), while `animation: none`
+removes the animations entirely and changes the behaviour, not just the
+speed.
+
+## The element I un-animated
+
+My first version paired the post date too — and it was motion sickness. The
+date sits above the title on the home page but below it on the post page, so
+the two elements crossed paths mid-flight. I removed it. The API makes
+morphing cheap; the real work is deciding what *not* to morph.
+
+## The part I got for free
+
+One last thing the dissection taught me: most of the smoothness I admired
+wasn't the transition at all. Next.js already prefetches `Link` targets as
+they scroll into view (in production) and swaps pages client-side, so the
+"instant" feel was there before I touched anything. The travelling title is
+just the last layer of seasoning — but it's the layer you notice.
