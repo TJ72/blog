@@ -32,7 +32,13 @@ vi.mock("node:fs", async (importOriginal) => {
   return { ...mocked, default: mocked };
 });
 
-import { getAllPosts, getPostBySlug, getPostSlugs, postExists } from "./posts";
+import {
+  getAllPosts,
+  getPostBySlug,
+  getPostSlugs,
+  getRelatedPosts,
+  postExists,
+} from "./posts";
 
 beforeEach(() => {
   mock.files.clear();
@@ -124,5 +130,55 @@ describe("getAllPosts", () => {
     writePost("zebra.mdx", '---\ntitle: "Z"\ndate: "2026-01-01"\n---\nx');
     writePost("apple.mdx", '---\ntitle: "A"\ndate: "2026-01-01"\n---\nx');
     expect(getAllPosts().map((p) => p.slug)).toEqual(["apple", "zebra"]);
+  });
+});
+
+describe("getRelatedPosts", () => {
+  it("excludes the current post and ranks candidates by shared-tag count", () => {
+    writePost(
+      "current.mdx",
+      '---\ntitle: "C"\ndate: "2026-07-01"\ntags: ["nextjs", "react"]\n---\nx',
+    );
+    // two-tags is OLDER than one-tag: overlap must beat recency.
+    writePost(
+      "two-tags.mdx",
+      '---\ntitle: "T"\ndate: "2026-01-01"\ntags: ["nextjs", "react"]\n---\nx',
+    );
+    writePost(
+      "one-tag.mdx",
+      '---\ntitle: "O"\ndate: "2026-06-01"\ntags: ["nextjs", "gcp"]\n---\nx',
+    );
+    writePost(
+      "no-overlap.mdx",
+      '---\ntitle: "N"\ndate: "2026-06-15"\ntags: ["aws"]\n---\nx',
+    );
+    expect(getRelatedPosts("current").map((p) => p.slug)).toEqual([
+      "two-tags",
+      "one-tag",
+      "no-overlap",
+    ]);
+  });
+
+  it("falls back to newest-first when nothing overlaps (or posts are untagged)", () => {
+    writePost("current.mdx", '---\ntitle: "C"\ndate: "2026-07-01"\n---\nx');
+    writePost("older.mdx", '---\ntitle: "A"\ndate: "2025-01-01"\n---\nx');
+    writePost("newer.mdx", '---\ntitle: "B"\ndate: "2026-06-01"\n---\nx');
+    expect(getRelatedPosts("current").map((p) => p.slug)).toEqual([
+      "newer",
+      "older",
+    ]);
+  });
+
+  it("respects the limit", () => {
+    writePost("current.mdx", '---\ntitle: "C"\ndate: "2026-07-01"\n---\nx');
+    writePost("a.mdx", '---\ntitle: "A"\ndate: "2026-01-01"\n---\nx');
+    writePost("b.mdx", '---\ntitle: "B"\ndate: "2026-02-01"\n---\nx');
+    writePost("c.mdx", '---\ntitle: "X"\ndate: "2026-03-01"\n---\nx');
+    expect(getRelatedPosts("current", 2)).toHaveLength(2);
+  });
+
+  it("returns [] when the current post is the only one (today's reality)", () => {
+    writePost("current.mdx", '---\ntitle: "C"\ndate: "2026-07-01"\n---\nx');
+    expect(getRelatedPosts("current")).toEqual([]);
   });
 });

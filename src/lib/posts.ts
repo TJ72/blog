@@ -13,8 +13,9 @@ const POSTS_DIR = path.join(process.cwd(), "content/posts");
 //  - Model: one `category` per post (big section, e.g. Cloud / Study abroad / Algorithms)
 //    + keep `tags` for fine-grained labels. Adding `category` is cheap: frontmatter
 //    line + a field here + the parser below — no data migration needed.
-//  - Build the consumption side (tags are currently parsed but unused anywhere):
-//    show category/tags on home + post pages, add /category/[name] listing pages + nav.
+//  - Build the rest of the consumption side (tags currently feed getRelatedPosts
+//    only): show category/tags on home + post pages, add /category/[name]
+//    listing pages + nav.
 export type PostMeta = {
   slug: string;
   title: string;
@@ -79,4 +80,23 @@ export function getAllPosts(): PostMeta[] {
         (a.date < b.date ? 1 : a.date > b.date ? -1 : 0) ||
         a.slug.localeCompare(b.slug),
     );
+}
+
+/** Up to `limit` other posts for a "Read next" list, most related first.
+ *  Relatedness = how many tags a candidate shares with the current post.
+ *  Zero-overlap posts still qualify: with a small corpus the list degrades
+ *  gracefully to "latest posts", and it sharpens on its own as tagged content
+ *  grows. Sort is stable, so equal scores keep getAllPosts' newest-first
+ *  order — recency is the tiebreaker without any extra comparison. */
+export function getRelatedPosts(slug: string, limit = 3): PostMeta[] {
+  const currentTags = new Set(getPostBySlug(slug).meta.tags ?? []);
+  return getAllPosts()
+    .filter((post) => post.slug !== slug)
+    .map((post) => ({
+      post,
+      score: (post.tags ?? []).filter((tag) => currentTags.has(tag)).length,
+    }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit)
+    .map((scored) => scored.post);
 }

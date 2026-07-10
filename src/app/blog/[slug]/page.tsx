@@ -7,7 +7,12 @@ import remarkGfm from "remark-gfm";
 import rehypePrettyCode, {
   type Options as RehypePrettyCodeOptions,
 } from "rehype-pretty-code";
-import { getAllPosts, getPostBySlug, postExists } from "@/lib/posts";
+import {
+  getAllPosts,
+  getPostBySlug,
+  getRelatedPosts,
+  postExists,
+} from "@/lib/posts";
 import { SITE_NAME } from "@/lib/site";
 
 // Syntax highlighting via Shiki (runs at build time → zero client JS).
@@ -65,6 +70,7 @@ export default async function PostPage({
   if (!postExists(slug)) notFound();
 
   const { meta, content } = getPostBySlug(slug);
+  const relatedPosts = getRelatedPosts(slug);
 
   return (
     <article className="mx-auto w-full max-w-(--w-content) px-6 py-16">
@@ -100,6 +106,38 @@ export default async function PostPage({
           }}
         />
       </div>
+      {/* Related reading — an <aside> inside <article> marks content that is
+          tangentially related to it. Renders nothing while this is the only
+          post; lights up by itself once a second one exists. Cards reuse the
+          home list's markup, minus the ViewTransition pairing: pairing here
+          would also animate the REVERSE direction (the big h1 flying below
+          the fold into a card), the same crossing-paths problem that got the
+          date un-animated. */}
+      {relatedPosts.length > 0 && (
+        <aside aria-label="Read next" className="mt-16">
+          <h2 className="text-xl font-medium tracking-tight">Read next</h2>
+          <ul className="mt-6 space-y-8">
+            {relatedPosts.map((post) => (
+              <li key={post.slug} className="group">
+                <Link href={`/blog/${post.slug}`} className="block">
+                  <time
+                    dateTime={post.date || undefined}
+                    className="font-sans text-sm text-muted"
+                  >
+                    {post.date}
+                  </time>
+                  <h3 className="mt-1 text-lg font-medium tracking-tight group-hover:underline">
+                    {post.title}
+                  </h3>
+                  {post.description && (
+                    <p className="mt-1 italic text-muted">{post.description}</p>
+                  )}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </aside>
+      )}
     </article>
   );
 }
