@@ -177,7 +177,11 @@ pre {
   border-radius: var(--radius-lg);
   border: 1px solid var(--line);
   background-color: #f6f8fa; /* github-light surface */
-  padding: 1rem 1.25rem;
+  /* Horizontal padding lives on the inner <code> (below), NOT here: a scroll
+     container's own end padding is unreliably included in the scrollable
+     area, so a long line scrolled to its end would sit flush against the
+     box edge with no right-side gap. */
+  padding: 1rem 0;
   font-size: 0.875rem;
   line-height: 1.6;
 }
@@ -185,7 +189,13 @@ pre {
 [data-rehype-pretty-code-figure] pre code {
   background-color: transparent;
   border: 0;
-  padding: 0;
+  /* width: max-content sizes the box to the longest line, so this padding
+     scrolls WITH the content — equal breathing room at both ends of the
+     scroll. min-width keeps short blocks stretched to the full block width. */
+  display: block;
+  width: max-content;
+  min-width: 100%;
+  padding: 0 1.25rem;
   font-family: var(--font-mono), ui-monospace, SFMono-Regular, monospace;
   font-size: inherit;
 }
