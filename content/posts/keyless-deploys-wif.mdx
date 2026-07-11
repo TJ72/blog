@@ -1,0 +1,155 @@
+---
+title: "Keyless deploys: the key I never created"
+date: "2026-07-11"
+description: "How this blog deploys to Cloud Run with zero GitHub secrets — Workload Identity Federation, OIDC token exchange, and the long-lived key that never existed."
+tags: ["gcp", "ci-cd", "security"]
+---
+
+If you point `gh secret list` at this blog's repository, it prints nothing.
+Zero secrets. Yet a push to `main` lints, tests, builds a container image,
+pushes it to Google's registry, and swaps it live on Cloud Run — the page
+you're reading arrived exactly that way.
+
+That's not an oversight I'm confessing. Getting the secret count to zero was
+the point, and this post is about the mechanism that makes it possible.
+
+## The download I skipped
+
+The default way to let GitHub Actions deploy to a cloud looks the same in
+every tutorial: create a service account, generate a JSON key for it,
+download the key, paste it into the repository's secrets. Five minutes, and
+it works.
+
+The problem is the thing you're now holding. That JSON file is a long-lived
+credential — it doesn't expire on its own, and anyone who has the bytes *is*
+your deployer: from any machine, at any hour, no questions asked. It sits on
+the laptop that downloaded it. It sits in GitHub's secret store. Every copy
+is an equally valid key to production, and revoking one is a manual chore
+that happens only after you notice something's wrong — leaked CI credentials
+are a staple of incident postmortems for a reason.
+
+I didn't want to babysit that liability for a hobby blog. It turns out the
+same laziness that tempts you into pasting a key can be pointed the other
+way.
+
+## Thirty seconds of theory
+
+When my deploy workflow starts, the GitHub runner asks GitHub for an **OIDC
+token**: a signed statement (a JWT) describing that specific run — which
+repository it belongs to, which branch it's on, which workflow started it.
+It expires within minutes.
+
+The workflow hands that token to Google's Security Token Service and asks to
+act as my deployer service account. Google verifies the signature against
+GitHub's published public keys, checks the token's claims against conditions
+I configured, and — only if both pass — mints an access token for that
+service account, good for about an hour.
+
+So there are still credentials in this story. But they're born inside the
+run, they die within the hour, and nothing is ever written down. What I
+never created is the *long-lived* credential — the key that would have to be
+stored, guarded, and rotated. Trust comes from cryptography plus
+configuration, not from a shared secret.
+
+## The setup, in two halves
+
+**Google side** (Terraform). A *workload identity pool* holds external
+identities; a *provider* inside it declares whose tokens to trust, and under
+what condition:
+
+```hcl
+resource "google_iam_workload_identity_pool_provider" "github" {
+  workload_identity_pool_id          = google_iam_workload_identity_pool.github.workload_identity_pool_id
+  workload_identity_pool_provider_id = "github-provider"
+
+  # Only this repo, and only its main branch.
+  attribute_condition = "assertion.repository == 'TJ72/blog' && assertion.ref == 'refs/heads/main'"
+
+  # Copy token claims onto pool attributes — the IAM binding below keys on
+  # attribute.repository, and this mapping is what brings it into existence.
+  attribute_mapping = {
+    "google.subject"             = "assertion.sub"
+    "attribute.repository"       = "assertion.repository"
+    "attribute.repository_owner" = "assertion.repository_owner"
+  }
+
+  oidc {
+    issuer_uri = "https://token.actions.githubusercontent.com"
+  }
+}
+```
+
+Then one IAM binding closes the circuit — runs matching the pool may
+impersonate the deployer service account:
+
+```hcl
+resource "google_service_account_iam_member" "deployer_wif_user" {
+  service_account_id = google_service_account.github_deployer.name
+  role               = "roles/iam.workloadIdentityUser"
+  member             = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github.name}/attribute.repository/TJ72/blog"
+}
+```
+
+That `member` string is long enough to scroll, so here's its shape:
+`principalSet://` + the pool's full resource name +
+`/attribute.repository/TJ72/blog` — everything the pool admits, filtered
+down to runs from this one repository.
+
+**GitHub side** (the deploy workflow). The job needs permission to mint the
+OIDC token, and the auth step names the provider and the service account:
+
+```yaml
+permissions:
+  contents: read
+  id-token: write # lets the runner mint the GitHub OIDC token
+
+steps:
+  - name: Authenticate to Google Cloud
+    uses: google-github-actions/auth@v3
+    with:
+      workload_identity_provider: ${{ vars.WIF_PROVIDER }}
+      service_account: ${{ vars.DEPLOYER_SA }}
+```
+
+Notice those are `vars`, not `secrets`. A provider resource name and a
+service-account email aren't sensitive — they're identifiers, not keys —
+so they sit in plain repository variables. Terraform writes them there,
+which means renaming a resource updates the pipeline on the next apply.
+
+## The condition I tightened later
+
+My first attribute condition was `assertion.repository_owner == 'TJ72'` —
+"any repo I own". It worked, and it was too generous: any workflow in any
+repository under my account, on any branch, could have exchanged its way
+into the deployer.
+
+The current condition pins the repo *and* the branch. Pinning
+`refs/heads/main` has a nice side effect: pull-request workflows
+authenticate as a merge ref (`refs/pull/123/merge`), so a PR — mine or
+anyone's — is refused at the token exchange itself. It never gets far enough
+for IAM to have an opinion. I like failures that happen at the border.
+
+## What a hijacked pipeline could still do
+
+Suppose someone compromises a run anyway — a poisoned third-party action,
+say. What do they get? The deployer holds exactly three roles: deploy Cloud
+Run revisions, push images to Artifact Registry, and act as the runtime
+service account. No IAM administration — it can't make the service public
+and it can't grant itself anything more. And the service it deploys runs as
+a *different*, even smaller identity, one that can write to a Firestore
+database (which holds a single view counter) and read a single storage
+bucket.
+
+None of this makes a compromise harmless — a deployer that can ship images
+can ship a malicious one. But each identity is scoped so the damage stops
+where its job description ends. Least privilege doesn't prevent the
+break-in; it decides how bad the story gets.
+
+## Security that costs less
+
+Usually hardening adds friction. This is the rare kind that removes some:
+there's no key file on any laptop, no rotation reminder, no offboarding
+checklist, nothing to leak into a log. GitHub and Google re-derive the
+credentials from scratch on every single run, and I do nothing at all.
+
+The safest key is the one that never existed.
