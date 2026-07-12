@@ -147,6 +147,33 @@ p {
   scroll-margin-top: 6rem;
 }
 
+/* Heading anchors (rehype-autolink-headings): a # hanging in the left
+   margin, invisible until the heading is hovered or the anchor focused.
+   Clicking copies the section URL (heading-anchors.tsx). Absolutely
+   positioned so it stays out of the text flow — heading wrapping (and
+   text-wrap: balance) never account for it. -1em fits inside the page's
+   24px minimum side padding. DOM order keeps it AFTER the text: screen
+   readers announce the heading before the link. */
+.prose :is(h2, h3) {
+  position: relative;
+}
+.prose .heading-anchor {
+  position: absolute;
+  left: -1em;
+  top: 0;
+  color: var(--faint);
+  text-decoration: none;
+  opacity: 0;
+  transition: opacity var(--duration-fast) var(--ease-standard);
+}
+.prose :is(h2, h3):hover .heading-anchor,
+.prose .heading-anchor:focus-visible {
+  opacity: 1;
+}
+.prose .heading-anchor:hover {
+  color: var(--ink);
+}
+
 /* Body copy is serif, but anything code-ish stays monospace. Tailwind's preflight
    already points these at the mono stack; we restate it so the intent is obvious
    and survives base-style changes. (Shiki blocks set --font-mono again on pre code.) */

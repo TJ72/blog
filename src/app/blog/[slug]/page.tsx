@@ -4,6 +4,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { MDXRemote } from "next-mdx-remote/rsc";
 import remarkGfm from "remark-gfm";
+import rehypeAutolinkHeadings, {
+  type Options as AutolinkOptions,
+} from "rehype-autolink-headings";
 import rehypePrettyCode, {
   type Options as RehypePrettyCodeOptions,
 } from "rehype-pretty-code";
@@ -16,6 +19,8 @@ import {
 } from "@/lib/posts";
 import { SITE_NAME } from "@/lib/site";
 import { extractHeadings } from "@/lib/toc";
+import { CodeBlock } from "./code-block";
+import { HeadingAnchors } from "./heading-anchors";
 import { TableOfContents } from "./table-of-contents";
 
 // Syntax highlighting via Shiki (runs at build time → zero client JS).
@@ -24,6 +29,15 @@ import { TableOfContents } from "./table-of-contents";
 const prettyCodeOptions: RehypePrettyCodeOptions = {
   theme: { light: "github-light", dark: "github-dark" },
   keepBackground: false,
+};
+
+// A `#` appended inside each heading, shown on hover (globals.css) and
+// copied-on-click (heading-anchors.tsx). Runs after rehype-slug: it links
+// to the ids slug just stamped.
+const autolinkOptions: AutolinkOptions = {
+  behavior: "append",
+  properties: { className: "heading-anchor", ariaLabel: "Link to this section" },
+  content: { type: "text", value: "#" },
 };
 
 // Only the posts returned by generateStaticParams exist; any other slug 404s at
@@ -103,12 +117,17 @@ export default async function PostPage({
         <div className="prose prose-zinc mt-8 max-w-none dark:prose-invert">
           <MDXRemote
             source={content}
+            components={{ pre: CodeBlock }}
             options={{
               mdxOptions: {
                 remarkPlugins: [remarkGfm],
                 // rehype-slug stamps github-slugger ids on headings — the TOC
                 // links to them, and every section becomes deep-linkable.
-                rehypePlugins: [rehypeSlug, [rehypePrettyCode, prettyCodeOptions]],
+                rehypePlugins: [
+                  rehypeSlug,
+                  [rehypeAutolinkHeadings, autolinkOptions],
+                  [rehypePrettyCode, prettyCodeOptions],
+                ],
               },
             }}
           />
@@ -145,6 +164,7 @@ export default async function PostPage({
             </ul>
           </aside>
         )}
+        <HeadingAnchors />
       </article>
       {/* Sticky TOC in the right gutter (xl+); the reading column never
           moves. The absolute wrapper spans the article's full height — that
