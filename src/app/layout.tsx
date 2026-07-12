@@ -58,9 +58,13 @@ export default function RootLayout({
   return (
     // suppressHydrationWarning: next-themes sets the `class` on <html> before
     // React hydrates, so the server/client attributes intentionally differ.
+    // data-scroll-behavior: asks Next 16 to suppress our CSS smooth scrolling
+    // during route transitions — navigation snaps to top instead of animating
+    // under the view-transition morph; in-page anchors stay smooth.
     <html
       lang="en"
       suppressHydrationWarning
+      data-scroll-behavior="smooth"
       className={`${geistSans.variable} ${geistMono.variable} ${stixTwoText.variable} h-full antialiased`}
     >
       <body className="min-h-full">

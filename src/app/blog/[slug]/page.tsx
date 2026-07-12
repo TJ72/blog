@@ -7,6 +7,7 @@ import remarkGfm from "remark-gfm";
 import rehypePrettyCode, {
   type Options as RehypePrettyCodeOptions,
 } from "rehype-pretty-code";
+import rehypeSlug from "rehype-slug";
 import {
   getAllPosts,
   getPostBySlug,
@@ -14,6 +15,8 @@ import {
   postExists,
 } from "@/lib/posts";
 import { SITE_NAME } from "@/lib/site";
+import { extractHeadings } from "@/lib/toc";
+import { TableOfContents } from "./table-of-contents";
 
 // Syntax highlighting via Shiki (runs at build time → zero client JS).
 // Dual theme emits CSS variables (--shiki-light / --shiki-dark) that we switch
@@ -71,73 +74,90 @@ export default async function PostPage({
 
   const { meta, content } = getPostBySlug(slug);
   const relatedPosts = getRelatedPosts(slug);
+  const headings = extractHeadings(content);
 
   return (
-    <article className="mx-auto w-full max-w-(--w-content) px-6 py-16">
-      <Link
-        href="/"
-        className="font-sans text-sm text-muted transition-colors hover:text-ink"
-      >
-        ← Back home
-      </Link>
-      {/* Name matches the home list entry for this slug — that pairing is what
-          makes the title morph across the navigation. Only the title is
-          paired: the date's position relative to the title flips between the
-          two layouts, so morphing it as well made the elements cross paths. */}
-      <ViewTransition name={`post-title-${slug}`} share="morph">
-        <h1 className="mt-6 text-2xl font-medium tracking-tight">
-          {meta.title}
-        </h1>
-      </ViewTransition>
-      <time
-        dateTime={meta.date || undefined}
-        className="mt-2 block font-sans text-sm text-muted"
-      >
-        {meta.date}
-      </time>
-      <div className="prose prose-zinc mt-8 max-w-none dark:prose-invert">
-        <MDXRemote
-          source={content}
-          options={{
-            mdxOptions: {
-              remarkPlugins: [remarkGfm],
-              rehypePlugins: [[rehypePrettyCode, prettyCodeOptions]],
-            },
-          }}
-        />
-      </div>
-      {/* Related reading — an <aside> inside <article> marks content that is
-          tangentially related to it. Renders nothing while this is the only
-          post; lights up by itself once a second one exists. Cards reuse the
-          home list's markup, minus the ViewTransition pairing: pairing here
-          would also animate the REVERSE direction (the big h1 flying below
-          the fold into a card), the same crossing-paths problem that got the
-          date un-animated. */}
-      {relatedPosts.length > 0 && (
-        <aside aria-label="Read next" className="mt-16">
-          <h2 className="text-xl font-medium tracking-tight">Read next</h2>
-          <ul className="mt-6 space-y-8">
-            {relatedPosts.map((post) => (
-              <li key={post.slug} className="group">
-                <Link href={`/blog/${post.slug}`} className="block">
-                  <time
-                    dateTime={post.date || undefined}
-                    className="font-sans text-sm text-muted"
-                  >
-                    {post.date}
-                  </time>
-                  <h3 className="mt-1 text-lg font-medium tracking-tight group-hover:underline">
-                    {post.title}
-                  </h3>
-                  {post.description && (
-                    <p className="mt-1 italic text-muted">{post.description}</p>
-                  )}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </aside>
+    <div className="relative">
+      <article className="mx-auto w-full max-w-(--w-content) px-6 py-16">
+        <Link
+          href="/"
+          className="font-sans text-sm text-muted transition-colors hover:text-ink"
+        >
+          ← Back home
+        </Link>
+        {/* Name matches the home list entry for this slug — that pairing is what
+            makes the title morph across the navigation. Only the title is
+            paired: the date's position relative to the title flips between the
+            two layouts, so morphing it as well made the elements cross paths. */}
+        <ViewTransition name={`post-title-${slug}`} share="morph">
+          <h1 className="mt-6 text-2xl font-medium tracking-tight">
+            {meta.title}
+          </h1>
+        </ViewTransition>
+        <time
+          dateTime={meta.date || undefined}
+          className="mt-2 block font-sans text-sm text-muted"
+        >
+          {meta.date}
+        </time>
+        <div className="prose prose-zinc mt-8 max-w-none dark:prose-invert">
+          <MDXRemote
+            source={content}
+            options={{
+              mdxOptions: {
+                remarkPlugins: [remarkGfm],
+                // rehype-slug stamps github-slugger ids on headings — the TOC
+                // links to them, and every section becomes deep-linkable.
+                rehypePlugins: [rehypeSlug, [rehypePrettyCode, prettyCodeOptions]],
+              },
+            }}
+          />
+        </div>
+        {/* Related reading — an <aside> inside <article> marks content that is
+            tangentially related to it. Renders nothing while this is the only
+            post; lights up by itself once a second one exists. Cards reuse the
+            home list's markup, minus the ViewTransition pairing: pairing here
+            would also animate the REVERSE direction (the big h1 flying below
+            the fold into a card), the same crossing-paths problem that got the
+            date un-animated. */}
+        {relatedPosts.length > 0 && (
+          <aside aria-label="Read next" className="mt-16">
+            <h2 className="text-xl font-medium tracking-tight">Read next</h2>
+            <ul className="mt-6 space-y-8">
+              {relatedPosts.map((post) => (
+                <li key={post.slug} className="group">
+                  <Link href={`/blog/${post.slug}`} className="block">
+                    <time
+                      dateTime={post.date}
+                      className="font-sans text-sm text-muted"
+                    >
+                      {post.date}
+                    </time>
+                    <h3 className="mt-1 text-lg font-medium tracking-tight group-hover:underline">
+                      {post.title}
+                    </h3>
+                    {post.description && (
+                      <p className="mt-1 italic text-muted">{post.description}</p>
+                    )}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </aside>
+        )}
+      </article>
+      {/* Sticky TOC in the right gutter (xl+); the reading column never
+          moves. The absolute wrapper spans the article's full height — that
+          is what lets the sticky nav stop at the article's end — and left is
+          token-derived so a --w-content change carries the gutter along.
+          A one-entry TOC is pointless, hence the two-section minimum. */}
+      {headings.length >= 2 && (
+        <div className="absolute inset-y-0 left-[calc(50%_+_var(--w-content)/2_+_2rem)] hidden w-56 xl:block">
+          <div className="sticky top-16">
+            <TableOfContents headings={headings} />
+          </div>
+        </div>
       )}
-    </article>
+    </div>
   );
 }
