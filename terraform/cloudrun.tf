@@ -1,6 +1,18 @@
 # The Cloud Run service. Imported from the running service; Terraform owns the
 # configuration, while CI/CD owns the image (see the lifecycle block at the end).
 
+# Public access: allUsers may invoke the service — the one binding that makes
+# the blog a public website. Originally created by Phase 2's `gcloud run deploy
+# --allow-unauthenticated`; imported so a rebuild from Terraform alone yields a
+# reachable site instead of a 403.
+resource "google_cloud_run_v2_service_iam_member" "public_invoker" {
+  project  = var.project_id
+  location = google_cloud_run_v2_service.blog.location
+  name     = google_cloud_run_v2_service.blog.name
+  role     = "roles/run.invoker"
+  member   = "allUsers"
+}
+
 # __generated__ by Terraform from "projects/albert-blog-2606221144/locations/asia-east1/services/blog"
 resource "google_cloud_run_v2_service" "blog" {
   annotations          = {}
