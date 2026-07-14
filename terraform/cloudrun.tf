@@ -1,6 +1,43 @@
 # The Cloud Run service. Imported from the running service; Terraform owns the
 # configuration, while CI/CD owns the image (see the lifecycle block at the end).
 
+# Custom domain (Phase 3): albertt.dev + www, via Cloud Run domain mappings —
+# free, but a permanent-preview feature with documented extra latency; accepted
+# for a personal blog over an ~US$18/mo load balancer. Google provisions and
+# renews the TLS certificates once the DNS records exist at the registrar
+# (Namecheap — DNS is NOT Terraform-managed):
+#   apex  A     216.239.32.21 / 216.239.34.21 / 216.239.36.21 / 216.239.38.21
+#   apex  AAAA  2001:4860:4802:32::15 / :34::15 / :36::15 / :38::15
+#   www   CNAME ghs.googlehosted.com
+# Creating a mapping requires the domain to be Search-Console-verified by the
+# identity running apply. www serves the same content (mappings can't redirect);
+# the page's canonical URL names the apex.
+resource "google_cloud_run_domain_mapping" "apex" {
+  location = google_cloud_run_v2_service.blog.location
+  name     = "albertt.dev"
+  project  = var.project_id
+
+  metadata {
+    namespace = var.project_id
+  }
+  spec {
+    route_name = google_cloud_run_v2_service.blog.name
+  }
+}
+
+resource "google_cloud_run_domain_mapping" "www" {
+  location = google_cloud_run_v2_service.blog.location
+  name     = "www.albertt.dev"
+  project  = var.project_id
+
+  metadata {
+    namespace = var.project_id
+  }
+  spec {
+    route_name = google_cloud_run_v2_service.blog.name
+  }
+}
+
 # Public access: allUsers may invoke the service — the one binding that makes
 # the blog a public website. Originally created by Phase 2's `gcloud run deploy
 # --allow-unauthenticated`; imported so a rebuild from Terraform alone yields a

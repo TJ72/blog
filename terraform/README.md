@@ -6,6 +6,8 @@ resources.
 **Compute** (`cloudrun.tf`):
 
 - `google_cloud_run_v2_service` — the blog service. Terraform owns the config; CI owns the image (`lifecycle.ignore_changes`), so `gcloud run deploy` on each push isn't seen as drift.
+- `google_cloud_run_v2_service_iam_member` — the `allUsers → run.invoker` binding that makes the blog publicly reachable. Adopted via import; without it, a rebuild from Terraform alone would deploy a service that answers 403.
+- `google_cloud_run_domain_mapping` ×2 — `albertt.dev` + `www.albertt.dev` with automatic Google-managed certificates. The matching A/AAAA/CNAME records live at the registrar (Namecheap), which is NOT Terraform-managed; the required values are listed in the resource comment.
 
 **Monitoring** (`main.tf`):
 
@@ -15,13 +17,20 @@ resources.
 - `google_monitoring_dashboard` — "Blog — Service Health"
 - `google_pubsub_topic` + `google_pubsub_topic_iam_member` — alert transport
 - `google_cloudfunctions2_function` — the alert-to-Discord relay
+- `archive_file` (data) + `google_storage_bucket_object` — the function's source, zipped at plan time and uploaded under a content-addressed name, so editing `../functions/alert-to-discord` shows up in `terraform plan` and `apply` redeploys it
 
 **CI/CD identity** (`iam.tf`) — keyless GitHub Actions → GCP via Workload Identity Federation:
 
-- `google_iam_workload_identity_pool` + `_provider` — trust GitHub's OIDC, scoped to the repo owner
+- `google_iam_workload_identity_pool` + `_provider` — trust GitHub's OIDC, pinned by `attribute_condition` to this repo **and its `main` branch**: a PR or fork run is rejected at the token exchange, before IAM is even consulted
 - `google_service_account` — the deployer SA
-- `google_project_iam_member` ×2 — `run.developer` + `artifactregistry.writer`
-- `google_service_account_iam_member` ×2 — deployer acts as the runtime SA; the `TJ72/blog` principalSet may impersonate the deployer
+- `google_project_iam_member` — `run.developer` + `artifactregistry.writer` (no IAM-admin, so the pipeline can't change who may invoke the service)
+- `google_service_account_iam_member` — deployer acts as the runtime SA; the `TJ72/blog` principalSet may impersonate the deployer
+
+**Workload identities** (`iam.tf`) — a dedicated least-privilege SA per workload, instead of the default compute SA (which carries `editor`):
+
+- `blog-runtime` — the Cloud Run service's identity; holds only `datastore.user` + bucket-scoped `storage.objectViewer` (the grants are listed under Data backends)
+- `alert-fn-runtime` — the function's runtime identity; holds **zero roles** (the code only reads an env var and POSTs to Discord)
+- `alert-fn-build` + `alert-fn-trigger` — the function's build (Cloud Build) and trigger (Eventarc) control-plane identities, with `cloudbuild.builds.builder` and `eventarc.eventReceiver` + `run.invoker` respectively
 
 **Data backends** (`data.tf`) and runtime-SA access (`iam.tf`):
 
@@ -29,6 +38,11 @@ resources.
 - `google_storage_bucket` — the private CV bucket
 - `google_artifact_registry_repository` — the container-image repo
 - `google_project_iam_member` + `google_storage_bucket_iam_member` — the runtime SA reads the counter and the CV (least privilege)
+
+**Secrets** (`secrets.tf`):
+
+- `google_secret_manager_secret` — the `admin-token`, `session-secret`, and `discord-webhook` containers (values are added out-of-band, see [Secrets](#secrets))
+- `google_secret_manager_secret_iam_member` — each runtime SA may read only the secrets it needs
 
 **CI/CD wiring** (`github.tf`) — single source of truth for the workflow's auth inputs:
 
@@ -133,7 +147,7 @@ state without recreating them.
 - **State** is in a private, versioned GCS backend (see [State](#state)). The app
   secrets are no longer in it — they live in Secret Manager (see [Secrets](#secrets)),
   so state holds only non-secret config plus references.
-- **The function's source** is referenced as the already-uploaded zip, so Terraform
-  manages the function's *config* but not its *code deploy* — changing
-  `../functions/alert-to-discord` still needs `gcloud functions deploy`. Managing
-  the source archive in Terraform too is a future improvement.
+- **The function's source** is managed end to end: the zip is rebuilt at plan
+  time from `../functions/alert-to-discord`, so a code change there is an
+  ordinary `plan` diff and `apply` is the deploy — there is no separate
+  `gcloud functions deploy` step.

@@ -1,10 +1,10 @@
-# Albert's Blog
+# Blog
 
 A personal blog and writing space, built from scratch and shipped to Google Cloud
 Run. It doubles as a hands-on cloud-engineering project — the goal was to learn
 Docker, CI/CD, and GCP deeply by taking the manual path first, then automating it.
 
-**Live:** https://blog-503336128890.asia-east1.run.app
+**Live:** https://albertt.dev
 
 <!-- TODO: add a screenshot once the home page bio is finalised.
      Capture light + dark, save to docs/screenshot.png, then:
@@ -22,8 +22,8 @@ Docker, CI/CD, and GCP deeply by taking the manual path first, then automating i
 - **State:** Firestore (view counter) + Cloud Storage (CV PDF)
 - **Hosting:** GCP Cloud Run (containerised, scale-to-zero), `output: "standalone"`
 - **CI/CD:** GitHub Actions + Workload Identity Federation (no service-account keys)
-- **Testing:** Vitest unit tests (session crypto, MDX parsing, bot filtering),
-  gating every deploy in CI
+- **Testing:** Vitest unit tests (session crypto, MDX parsing, TOC extraction,
+  bot filtering), gating every deploy in CI
 - **Tooling:** pnpm, Node 22, Docker
 
 ## Architecture
@@ -218,6 +218,7 @@ src/lib/              app-side libraries
   store.ts            cloud-neutral ports (ViewCounter, FileStore) + composition root
   adapters/gcp.ts     the only module that imports the Google Cloud SDK
   posts.ts            MDX posts loader
+  toc.ts              extracts h2/h3 headings from MDX for the table of contents
   auth.ts             admin session helpers (HMAC-signed session tokens)
   bots.ts             user-agent bot filter for the view counter
   *.test.ts           Vitest unit tests (run in CI; never traced into the image)
