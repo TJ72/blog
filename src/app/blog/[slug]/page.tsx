@@ -36,7 +36,8 @@ const prettyCodeOptions: RehypePrettyCodeOptions = {
 // to the ids slug just stamped.
 const autolinkOptions: AutolinkOptions = {
   behavior: "append",
-  properties: { className: "heading-anchor", ariaLabel: "Link to this section" },
+  // hast models `class` as a token list, so className must be an array.
+  properties: { className: ["heading-anchor"], ariaLabel: "Link to this section" },
   content: { type: "text", value: "#" },
 };
 
