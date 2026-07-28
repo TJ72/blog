@@ -1,8 +1,16 @@
+import type { Metadata } from "next";
 import { ViewTransition } from "react";
 import Link from "next/link";
 import { getAllPosts } from "@/lib/posts";
 import { SITE_DESCRIPTION } from "@/lib/site";
 import { SocialLinks } from "./social-links";
+
+// Identical content on the apex, www, and both *.run.app hostnames; canonical
+// names the real one. Set here rather than the root layout: metadata merges
+// shallowly, so a canonical up there would be inherited by /admin too.
+export const metadata: Metadata = {
+  alternates: { canonical: "/" },
+};
 
 export default function Home() {
   const posts = getAllPosts();
