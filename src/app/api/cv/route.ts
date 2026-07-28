@@ -1,6 +1,7 @@
 import { fileStore, viewCounter } from "@/lib/store";
 import { isBot } from "@/lib/bots";
 import { etagFor, etagMatches } from "@/lib/etag";
+import { clientIp, createRateLimiter } from "@/lib/rate-limit";
 
 // The store backend needs the Node.js runtime (not Edge), and this handler must
 // never be prerendered or cached — every hit should serve the latest stored file.
@@ -24,7 +25,38 @@ const pdfHeaders = {
   "Content-Disposition": 'inline; filename="albert-cv.pdf"',
 };
 
+// Ten downloads a minute per address. A person reads the CV once; ten leaves
+// room for a reload or a PDF viewer refetching, and still cuts a script down by
+// orders of magnitude. The limit is per instance, so the true ceiling is this
+// times the running instance count — set it low enough that the multiplied
+// figure is still harmless rather than trying to make the count exact.
+const WINDOW_MS = 60_000;
+const limiter = createRateLimiter({
+  limit: 10,
+  windowMs: WINDOW_MS,
+  // ~10k addresses is well under a megabyte and far past any real traffic here.
+  maxKeys: 10_000,
+});
+
 export async function GET(request: Request) {
+  // Rejected first, before the counter and before storage: the whole point is
+  // that a refused request costs us nothing but the connection. Conditional
+  // requests (304s) are checked too — they are cheap, not free, and a script
+  // could otherwise sit on a valid ETag and still keep an instance busy.
+  //
+  // A missing address means no proxy in front, which locally is normal and in
+  // production should not happen. Sharing one bucket in that case limits the
+  // damage rather than waving everyone through.
+  if (!limiter.check(clientIp(request) ?? "unknown")) {
+    return new Response("Too many requests", {
+      status: 429,
+      headers: {
+        "Retry-After": String(WINDOW_MS / 1000),
+        "Cache-Control": "no-store",
+      },
+    });
+  }
+
   // Count human views only — skip bots so the metric isn't inflated by crawlers
   // and probes. Never let a counter hiccup block the download: serving the CV is
   // the primary job, the metric is secondary. We still await so the write lands
