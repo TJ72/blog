@@ -1,6 +1,7 @@
 name: Deploy to Cloud Run
 
 # Auto-deploy on every push to main; also runnable by hand from the Actions tab.
+# Pull requests run the quality gate only — see the `if` on the deploy job.
 on:
   push:
     branches: [main]
@@ -9,6 +10,16 @@ on:
     # terraform/ and functions/ deploy via local `terraform apply`, not CI.
     # A mixed push still runs (skipped only if EVERY file matches), and
     # workflow_dispatch stays as the manual escape hatch.
+    paths-ignore:
+      - "terraform/**"
+      - "functions/**"
+      - "**.md"
+  # Same filters as the push trigger, so a PR is judged by exactly the rules its
+  # eventual merge will be. Note this means a PR touching only ignored paths gets
+  # no run at all — fine today, but if main ever gains branch protection with
+  # required checks, those PRs would wait forever for a check that never starts.
+  pull_request:
+    branches: [main]
     paths-ignore:
       - "terraform/**"
       - "functions/**"
@@ -73,6 +84,12 @@ jobs:
 
   deploy:
     needs: quality
+    # Verify pull requests, never ship them: main is the only thing that reaches
+    # production. GitHub already withholds secrets and the OIDC token from
+    # fork-originated `pull_request` runs, so this is not the only thing standing
+    # between a PR and a deploy — but it states the intent and skips a job that
+    # could only fail.
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     # Normal run is ~2m (build + push + deploy); generous headroom, still well
     # under the 6h default so a hang is caught early.
