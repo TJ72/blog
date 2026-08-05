@@ -31,7 +31,7 @@ export function SocialLinks() {
         </svg>
       </a>
       <a
-        href="https://www.linkedin.com/in/albert-tseng1072"
+        href="https://www.linkedin.com/in/albertt-tseng"
         target="_blank"
         rel="noopener noreferrer"
         aria-label="LinkedIn"
