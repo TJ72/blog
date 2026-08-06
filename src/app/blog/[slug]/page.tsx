@@ -103,8 +103,14 @@ export default async function PostPage({
         {/* Name matches the home list entry for this slug — that pairing is what
             makes the title morph across the navigation. Only the title is
             paired: the date's position relative to the title flips between the
-            two layouts, so morphing it as well made the elements cross paths. */}
-        <ViewTransition name={`post-title-${slug}`} share="morph">
+            two layouts, so morphing it as well made the elements cross paths.
+            share/default mirror the home list entry — React pairs by name, and
+            the two ends of a pair should carry the same props. */}
+        <ViewTransition
+          name={`post-title-${slug}`}
+          share="morph"
+          default="none"
+        >
           <h1 className="mt-6 text-2xl font-medium tracking-tight">
             {meta.title}
           </h1>

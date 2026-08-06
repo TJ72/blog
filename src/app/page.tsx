@@ -61,8 +61,22 @@ export default function Home() {
                     the title here but below it on the post page, so pairing it
                     too made the two elements cross paths mid-flight.
                     share="morph" tags the pair for the timing CSS in
-                    globals.css. */}
-                <ViewTransition name={`post-title-${post.slug}`} share="morph">
+                    globals.css.
+                    default="none" holds the OTHER posts still. Only the clicked
+                    post's title is paired across the navigation; every other
+                    title here is a named transition that exists on this page
+                    only, and an unpaired name falls back to `default`, which is
+                    "auto" — React's own crossfade. So clicking one post also
+                    animated the titles you didn't click, at the browser's
+                    default timing rather than our motion tokens (the CSS above
+                    only targets .morph). The stray animations also multiply as
+                    posts are added. Keep share="morph" explicit alongside it:
+                    with default="none" and no share, the pair stops morphing. */}
+                <ViewTransition
+                  name={`post-title-${post.slug}`}
+                  share="morph"
+                  default="none"
+                >
                   <h3 className="mt-1 text-lg font-medium tracking-tight group-hover:underline">
                     {post.title}
                   </h3>
