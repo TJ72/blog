@@ -63,35 +63,34 @@ layouts in JavaScript. You name two elements; the browser does the travel.
 ## The Next.js 16 version
 
 Next.js 16 wires this into client-side navigation so you never call
-`startViewTransition` yourself. Three pieces.
+`startViewTransition` yourself. Two pieces.
 
-**1. Turn on the experimental flag** in `next.config.ts`:
+> **Updated 2026-08-06.** This post originally started with a third piece:
+> turning on `experimental.viewTransition` in `next.config.ts`. Next.js 16.3
+> deleted that flag — the App Router now runs navigations inside the View
+> Transitions API with no opt-in at all. On 16.2 and earlier you still need
+> it. On 16.3 the key is gone from the config schema, so leaving it behind is
+> a type error rather than a warning, which is a kind way to find out.
 
-```ts
-import type { NextConfig } from "next";
-
-const nextConfig: NextConfig = {
-  experimental: {
-    viewTransition: true,
-  },
-};
-```
-
-**2. Wrap both elements** with React's `ViewTransition` component — it comes
+**1. Wrap both elements** with React's `ViewTransition` component — it comes
 from `react` itself, not from Next:
 
 ```tsx
 // app/page.tsx — the post list
 import { ViewTransition } from "react";
 
-<ViewTransition name={`post-title-${post.slug}`} share="morph">
+<ViewTransition
+  name={`post-title-${post.slug}`}
+  share="morph"
+  default="none"
+>
   <h3>{post.title}</h3>
 </ViewTransition>
 ```
 
 ```tsx
 // app/blog/[slug]/page.tsx — the article header
-<ViewTransition name={`post-title-${slug}`} share="morph">
+<ViewTransition name={`post-title-${slug}`} share="morph" default="none">
   <h1>{meta.title}</h1>
 </ViewTransition>
 ```
@@ -101,7 +100,15 @@ the `view-transition-name` is only applied at transition time, and the pages
 themselves stay fully static. This blog is SSG end to end, and adding the
 morph didn't change that.
 
-**3. Set the timing in CSS.** The `share="morph"` prop tags the pair with a
+`default="none"` is the prop I wish I'd written on day one. Only the title
+you clicked gets paired across the navigation. Every *other* title in the
+list exists on the old page and not the new one, and an unpaired name falls
+back to `default="auto"` — React's own crossfade. So for months the posts you
+*didn't* click were quietly animating too, on the browser's default timing
+instead of the tokens below. Keep `share` explicit when you add it: with
+`default="none"` and no `share`, the pair stops morphing and you get nothing.
+
+**2. Set the timing in CSS.** The `share="morph"` prop tags the pair with a
 class, so plain CSS can target it. The browser supplies the position/size
 keyframes; I only tell it how long to run, using the same motion tokens as
 every other transition on this site:
@@ -123,13 +130,35 @@ every other transition on this site:
 ```
 
 Two details worth copying. Browsers without the API just skip the animation —
-navigation works fine, so this is progressive enhancement, which is also why
-I'm comfortable shipping an experimental feature on a personal blog. And for
-`prefers-reduced-motion`, collapse the duration to `0s` instead of setting
-`animation: none` — a zero-duration animation keeps the whole lifecycle
-intact (same events, same promises, just instant), while `animation: none`
-removes the animations entirely and changes the behaviour, not just the
-speed.
+navigation works fine, so this is progressive enhancement all the way down.
+And for `prefers-reduced-motion`, collapse the duration to `0s` instead of
+setting `animation: none` — a zero-duration animation keeps the whole
+lifecycle intact (same events, same promises, just instant), while
+`animation: none` removes the animations entirely and changes the behaviour,
+not just the speed.
+
+## The stability I misread
+
+Losing the flag sent me looking at what had actually stabilised, and it turns
+out there are two layers here. Only one of them settled.
+
+The layer that settled is Next's *integration* — the part that notices you
+navigated and wraps the update in a transition. That's all the flag ever
+gated, and it's now unconditional.
+
+React's `<ViewTransition>` component is the other layer, and it's still a
+canary API. It isn't in a stable React release at all: `import { ViewTransition }
+from "react"` resolves to the React that Next vendors, not the `react` sitting
+in your `package.json`. You can catch it in the act:
+
+```bash
+node -p "'ViewTransition' in require('react')"   # false
+```
+
+So the props in the snippets above — `share`, `default` — can still change
+without a Next major version to announce it. That's fine for a blog that
+degrades to an ordinary navigation when anything goes wrong. It's worth
+knowing before you put it somewhere load-bearing.
 
 ## The element I un-animated
 
