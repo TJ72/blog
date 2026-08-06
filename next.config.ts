@@ -60,13 +60,22 @@ const nextConfig: NextConfig = {
   // dependency went missing). Bundling compiles storage + its deps into the
   // server chunk, so there's nothing to resolve from node_modules at runtime.
   serverExternalPackages: ["@google-cloud/firestore"],
+  // The `experimental.viewTransition` flag that used to live here was removed in
+  // Next 16.3: the App Router now runs route navigations inside the browser's
+  // View Transitions API unconditionally, so elements sharing a name on both
+  // pages (the post title on home ↔ post page) still morph with no opt-in. Note
+  // this stabilises Next's *integration* only — React's <ViewTransition>
+  // component is still a canary API, supplied by the React that Next vendors
+  // rather than by the `react` package in our dependencies. Its props (`share`,
+  // `default`, ...) can still change without a Next major.
   experimental: {
-    // React <ViewTransition> integration: route navigations run inside the
-    // browser's View Transitions API, so elements sharing a name on both pages
-    // (post title/date on home ↔ post page) morph instead of swapping.
-    // Experimental flag — acceptable for a personal blog; browsers without the
-    // API simply skip the animation.
-    viewTransition: true,
+    // Turbopack's build cache (.next/cache/turbopack) became a default in 16.3,
+    // but it only pays off when that directory survives between builds. Ours
+    // never does: `next build` runs inside the Dockerfile's builder stage, which
+    // starts from a clean layer every time, and .next is in .dockerignore so
+    // nothing is carried in either. Leaving it on would write a cache that is
+    // guaranteed never to be read — pure build-time and layer-size overhead.
+    turbopackFileSystemCacheForBuild: false,
   },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
